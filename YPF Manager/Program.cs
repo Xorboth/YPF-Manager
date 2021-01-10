@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 
 namespace Ypf_Manager
 {
@@ -12,52 +11,61 @@ namespace Ypf_Manager
             Console.WriteLine();
             Console.WriteLine();
 
-            // YPF Mode
+            Options o = Options.Instance;
+            o.Set(args);
 
-            if (args.Contains("-e"))
+            switch (o.Mode)
             {
-                String[] filesToProcess = args.Where(x => x.EndsWith(".ypf") && File.Exists(x)).ToArray();
+                case Options.OperationMode.CreateArchive:
 
-                foreach (String s in filesToProcess)
-                {
-                    String inputFile = Path.GetFullPath(s);
-                    String outputFolder = $@"{Path.GetDirectoryName(inputFile)}\{Path.GetFileNameWithoutExtension(inputFile)}";
+                    foreach (String f in o.FoldersToProcess)
+                    {
+                        YPFArchive.Create(f, $"{f}.ypf", o.EngineVersion);
+                    }
+                    break;
 
-                    YPFArchive.Extract(inputFile, outputFolder);
-                }
+                case Options.OperationMode.ExtractArchive:
+
+                    foreach (String f in o.FilesToProcess)
+                    {
+                        YPFArchive.Extract(f, $@"{Path.GetDirectoryName(f)}\{Path.GetFileNameWithoutExtension(f)}");
+                    }
+                    break;
+
+                case Options.OperationMode.PrintArchiveInfo:
+
+                    foreach (String f in o.FilesToProcess)
+                    {
+                        YPFArchive.PrintInfo(f);
+                    }
+                    break;
+
+                case Options.OperationMode.Help:
+                    Console.WriteLine("[DESCRIPTION]");
+                    Console.WriteLine("Manage your YPF archives with this tool.");
+                    Console.WriteLine();
+                    Console.WriteLine("[USAGE]");
+                    Console.WriteLine("Create archive:\t\t-c <folders_list> -v <version> [options]");
+                    Console.WriteLine("Extract archive:\t-e <files_list> [options]");
+                    Console.WriteLine("Print info:\t\t-p <files_list> [options]");
+                    Console.WriteLine();
+
+                    Console.WriteLine("[OPTIONS]");
+                    Console.WriteLine("\t-c <folders_list>\tSet create archive mode");
+                    Console.WriteLine("\t-e <files_list>\t\tSet extract archive mode");
+                    Console.WriteLine("\t-p <files_list>\t\tSet print archive info mode");
+                    Console.WriteLine("\t-v <version>\t\tSet the YU-RIS engine target version of the archive file");
+                    Console.WriteLine("\t-w\t\t\tWait for user input before exit");
+
+                    break;
             }
-            else if (args.Contains("-c"))
+
+            if (o.WaitForUserInputBeforeExit)
             {
-                String[] filesToProcess = args.Where(x => Directory.Exists(x)).ToArray();
-                Int32 version = Convert.ToInt32(args[args.ToList().IndexOf("-v") + 1]);
-
-                foreach (String s in filesToProcess)
-                {
-                    String inputFolder = Path.GetFullPath(s);
-                    String outputFile = $"{inputFolder}.ypf";
-
-                    YPFArchive.Compress(inputFolder, outputFile, version);
-                }
+                Console.WriteLine();
+                Console.WriteLine("Press enter to exit");
+                Console.ReadLine();
             }
-            else if (args.Contains("-p"))
-            {
-                String[] filesToProcess = args.Where(x => x.EndsWith(".ypf") && File.Exists(x)).ToArray();
-
-                foreach (String s in filesToProcess)
-                {
-                    String inputFile = Path.GetFullPath(s);
-
-                    YPFArchive.PrintInfo(inputFile);
-                }
-            }
-            else
-            {
-                Console.WriteLine("[ERROR] Missing operating mode");
-            }
-
-            Console.WriteLine();
-            Console.WriteLine("Press enter to exit");
-            Console.ReadLine();
         }
     }
 }

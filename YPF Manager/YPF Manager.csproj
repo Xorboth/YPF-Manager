@@ -47,6 +47,7 @@
   <ItemGroup>
     <Compile Include="Checksum\Adler32.cs" />
     <Compile Include="Checksum\Crc32.cs" />
+    <Compile Include="Options.cs" />
     <Compile Include="YPF\YPFArchive.cs" />
     <Compile Include="YPF\YPFEntry.cs" />
     <Compile Include="YPF\YPFHeader.cs" />

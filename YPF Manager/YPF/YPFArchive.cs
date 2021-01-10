@@ -9,7 +9,7 @@ namespace Ypf_Manager
     {
         public static string FileExtension => ".ypf";
 
-        public static void Compress(String inputFolder, String outputFile, Int32 version)
+        public static void Create(String inputFolder, String outputFile, Int32 version)
         {
             Console.WriteLine("[*COMPRESS*]");
             Console.WriteLine($"Folder: {inputFolder}");
