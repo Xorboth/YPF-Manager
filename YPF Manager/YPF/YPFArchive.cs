@@ -164,8 +164,6 @@ namespace Ypf_Manager
                     }
                 }
 
-                //bw.Write(0);
-
                 Console.WriteLine($"Finalizing header");
 
                 outputFileStream.Position = 0;
