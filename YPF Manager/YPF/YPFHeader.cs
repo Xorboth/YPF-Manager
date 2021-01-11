@@ -22,7 +22,7 @@ namespace Ypf_Manager
 
         public Checksum DataChecksum { get; set; }
 
-        public Int32 FileNameEncryptionKey { get; set; }
+        public Byte FileNameEncryptionKey { get; set; }
 
         public byte[] GetLengthSwappingTable()
         {
