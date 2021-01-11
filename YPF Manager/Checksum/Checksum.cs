@@ -18,14 +18,5 @@ namespace Ypf_Manager
             return ComputeHash(buf);
         }
 
-        public String ComputeHashString(Stream inputStream, int length)
-        {
-            return ComputeHash(inputStream, length).ToString("x8");
-        }
-
-        public String ComputeHashString(Byte[] inputBytes)
-        {
-            return ComputeHash(inputBytes).ToString("x8");
-        }
     }
 }
