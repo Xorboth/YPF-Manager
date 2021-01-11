@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -451,7 +451,7 @@ namespace Ypf_Manager
                     Console.WriteLine($"Header Size: {header.ArchivedFilesHeaderSize}");
                     Console.WriteLine($"Name Checksum Algorithm: {header.NameChecksum.Name}");
                     Console.WriteLine($"Data Checksum Algorithm: {header.DataChecksum.Name}");
-                    Console.WriteLine($"Filename Encryption Key: {header.FileNameEncryptionKey}");
+                    Console.WriteLine($"Filename Encryption Key: {header.FileNameEncryptionKey.ToString("x2")}");
                     Console.WriteLine();
 
                     Console.WriteLine("[FILES]");
