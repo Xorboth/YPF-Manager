@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -7,8 +7,6 @@ namespace Ypf_Manager
 {
     public class YPFArchive
     {
-        public static string FileExtension => ".ypf";
-
         public static void Create(String inputFolder, String outputFile, Int32 version)
         {
             Console.WriteLine("[*COMPRESS*]");
