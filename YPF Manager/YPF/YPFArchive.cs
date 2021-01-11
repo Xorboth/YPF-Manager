@@ -511,8 +511,8 @@ namespace Ypf_Manager
                         Console.WriteLine($"\tCompressed Size: {af.CompressedFileSize}");
                         Console.WriteLine($"\tOffset: {af.Offset}");
                         Console.WriteLine($"\tType: {af.Type}");
-                        Console.WriteLine($"\tName Checksum: {af.NameChecksum}");
-                        Console.WriteLine($"\tData Checksum: {af.DataChecksum}");
+                        Console.WriteLine($"\tName Checksum: {af.NameChecksum.ToString("x8")}");
+                        Console.WriteLine($"\tData Checksum: {af.DataChecksum.ToString("x8")}");
                         Console.WriteLine();
 
                         header.ArchivedFiles.Add(af);
