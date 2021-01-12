@@ -5,7 +5,7 @@ using System;
 namespace Ypf_Manager
 {
 
-    public class Crc32 : Checksum
+    class Crc32 : Checksum
     {
         public override string Name => "CRC32";
 

@@ -7,60 +7,73 @@ namespace Ypf_Manager
     {
         static void Main(string[] args)
         {
+            ErrorHandler error = ErrorHandler.Instance;
+            Config config = Config.Instance;
+
             Console.WriteLine("YPF Manager v0.1");
             Console.WriteLine();
             Console.WriteLine();
 
-            Options o = Options.Instance;
-            o.Set(args);
-
-            switch (o.Mode)
+            try
             {
-                case Options.OperationMode.CreateArchive:
+                config.Set(args);
 
-                    foreach (String f in o.FoldersToProcess)
-                    {
-                        YPFArchive.Create(f, $"{f}.ypf", o.EngineVersion);
-                    }
-                    break;
+                YPFArchive archive = new YPFArchive();
 
-                case Options.OperationMode.ExtractArchive:
+                switch (config.Mode)
+                {
+                    case Config.OperationMode.CreateArchive:
 
-                    foreach (String f in o.FilesToProcess)
-                    {
-                        YPFArchive.Extract(f, $@"{Path.GetDirectoryName(f)}\{Path.GetFileNameWithoutExtension(f)}");
-                    }
-                    break;
+                        foreach (String f in config.FoldersToProcess)
+                        {
+                            archive.Create(f, $"{f}.ypf", config.EngineVersion);
+                        }
+                        break;
 
-                case Options.OperationMode.PrintArchiveInfo:
+                    case Config.OperationMode.ExtractArchive:
 
-                    foreach (String f in o.FilesToProcess)
-                    {
-                        YPFArchive.PrintInfo(f);
-                    }
-                    break;
+                        foreach (String f in config.FilesToProcess)
+                        {
+                            archive.Extract(f, $@"{Path.GetDirectoryName(f)}\{Path.GetFileNameWithoutExtension(f)}");
+                        }
+                        break;
 
-                case Options.OperationMode.Help:
-                    Console.WriteLine("[DESCRIPTION]");
-                    Console.WriteLine("Manage your YPF archives with this tool.");
-                    Console.WriteLine();
-                    Console.WriteLine("[USAGE]");
-                    Console.WriteLine("Create archive:\t\t-c <folders_list> -v <version> [options]");
-                    Console.WriteLine("Extract archive:\t-e <files_list> [options]");
-                    Console.WriteLine("Print info:\t\t-p <files_list> [options]");
-                    Console.WriteLine();
+                    case Config.OperationMode.PrintArchiveInfo:
 
-                    Console.WriteLine("[OPTIONS]");
-                    Console.WriteLine("\t-c <folders_list>\tSet create archive mode");
-                    Console.WriteLine("\t-e <files_list>\t\tSet extract archive mode");
-                    Console.WriteLine("\t-p <files_list>\t\tSet print archive info mode");
-                    Console.WriteLine("\t-v <version>\t\tSet the YU-RIS engine target version of the archive file");
-                    Console.WriteLine("\t-w\t\t\tWait for user input before exit");
+                        foreach (String f in config.FilesToProcess)
+                        {
+                            archive.PrintInfo(f);
+                        }
+                        break;
 
-                    break;
+                    case Config.OperationMode.Help:
+
+                        Console.WriteLine("[DESCRIPTION]");
+                        Console.WriteLine("Manage your YPF archives with this tool.");
+                        Console.WriteLine();
+                        Console.WriteLine("[USAGE]");
+                        Console.WriteLine("Create archive:\t\t-c <folders_list> -v <version> [options]");
+                        Console.WriteLine("Extract archive:\t-e <files_list> [options]");
+                        Console.WriteLine("Print info:\t\t-p <files_list> [options]");
+                        Console.WriteLine();
+
+                        Console.WriteLine("[OPTIONS]");
+                        Console.WriteLine("\t-c <folders_list>\tSet create archive mode");
+                        Console.WriteLine("\t-e <files_list>\t\tSet extract archive mode");
+                        Console.WriteLine("\t-p <files_list>\t\tSet print archive info mode");
+                        Console.WriteLine("\t-v <version>\t\tSet the YU-RIS engine target version of the archive file");
+                        Console.WriteLine("\t-w\t\t\tWait for user input before exit");
+
+                        break;
+                }
             }
-
-            if (o.WaitForUserInputBeforeExit)
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                error.SaveLog();
+            }
+            
+            if (config.WaitForUserInputBeforeExit)
             {
                 Console.WriteLine();
                 Console.WriteLine("Press enter to exit");

@@ -4,21 +4,21 @@ using System.IO;
 
 namespace Ypf_Manager
 {
-    public class Options
+    class Config
     {
         //
         // Singleton setup
         //
 
-        private static Options instance = null;
+        private static Config instance = null;
 
-        public static Options Instance
+        public static Config Instance
         {
             get
             {
                 if (instance == null)
                 {
-                    instance = new Options();
+                    instance = new Config();
                 }
 
                 return instance;
@@ -29,6 +29,7 @@ namespace Ypf_Manager
         //
         // Enums
         //
+
         public enum OperationMode
         {
             CreateArchive = 0,
@@ -41,6 +42,11 @@ namespace Ypf_Manager
         //
         // Properties
         //
+
+        public static String ExecutableLocation()
+        {
+            return Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly().Location);
+        }
         public OperationMode Mode { get; set; }
 
         public Boolean WaitForUserInputBeforeExit { get; set; }
@@ -55,7 +61,8 @@ namespace Ypf_Manager
         //
         // Constructor
         //
-        public Options()
+
+        public Config()
         {
             //
             // Set initial values
@@ -73,8 +80,9 @@ namespace Ypf_Manager
 
 
         //
-        // Set options with arguments
+        // Scan args to set options
         //
+
         public void Set(String[] args)
         {
             //

@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Ypf_Manager
 {
-    public abstract class Checksum
+    abstract class Checksum
     {
         public abstract String Name { get; }
 

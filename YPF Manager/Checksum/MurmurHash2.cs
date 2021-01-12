@@ -15,7 +15,7 @@ using System;
 
 namespace Ypf_Manager
 {
-    public class MurmurHash2 : Checksum
+    class MurmurHash2 : Checksum
     {
 
         public override string Name => "MurmurHash2";

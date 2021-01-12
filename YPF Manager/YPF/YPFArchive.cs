@@ -5,9 +5,11 @@ using System.Linq;
 
 namespace Ypf_Manager
 {
-    public class YPFArchive
+    class YPFArchive
     {
-        public static void Create(String inputFolder, String outputFile, Int32 version)
+        ErrorHandler error = ErrorHandler.Instance;
+
+        public void Create(String inputFolder, String outputFile, Int32 version)
         {
             Console.WriteLine("[*COMPRESS*]");
             Console.WriteLine($"Folder: {inputFolder}");
@@ -71,7 +73,7 @@ namespace Ypf_Manager
                             // Check if the current file saturated the 32 filesize bits
                             if (inputFileStream.Length > Int32.MaxValue)
                             {
-                                throw new Exception("Max filesize reached for the current YPF version");
+                                error.NotifyError("Max filesize reached for the current YPF version", 1);
                             }
 
                             rawFileStream.Capacity = (Int32)inputFileStream.Length;
@@ -169,7 +171,7 @@ namespace Ypf_Manager
                         // Check if the current file saturated the 32 offset bits
                         if (header.Version < 479 && outputFileStream.Position > Int32.MaxValue)
                         {
-                            throw new Exception("Max offset reached for the current YPF version");
+                            error.NotifyError("Max offset reached for the current YPF version", 1);
                         }
                     }
                 }
@@ -193,7 +195,7 @@ namespace Ypf_Manager
 
                     if (encodedName.Length > 0xFF)
                     {
-                        throw new Exception("File name length can't be longer than 255 bytes (Shift-JIS)");
+                        error.NotifyError("File name length can't be longer than 255 bytes (Shift-JIS)", 1);
                     }
 
                     byte lengthEncoded = OneComplement((byte)header.GetLengthSwappingTable().ToList().IndexOf((byte)encodedName.Length));
@@ -225,12 +227,12 @@ namespace Ypf_Manager
 
                 if (outputFileStream.Position != header.ArchivedFilesHeaderSize)
                 {
-                    throw new Exception("Unexpected Header Size");
+                    error.NotifyError("Unexpected Header Size", 1);
                 }
             }
         }
 
-        public static void Extract(String inputFile, String outputFolder)
+        public void Extract(String inputFile, String outputFolder)
         {
             Console.WriteLine("[*EXTRACT*]");
             Console.WriteLine($"File: {inputFile}");
@@ -245,7 +247,7 @@ namespace Ypf_Manager
 
                     if (!Enumerable.SequenceEqual(header.Signature, br.ReadBytes(4)))
                     {
-                        throw new Exception("Invalid Archive Signature");
+                        error.NotifyError("Invalid Archive Signature", 1);
                     }
 
                     header.Version = br.ReadInt32();
@@ -256,21 +258,21 @@ namespace Ypf_Manager
 
                     if (header.Version < 0)
                     {
-                        throw new Exception("Invalid Version");
+                        error.NotifyError("Invalid Version", 1);
                     }
                     else if (header.Version < 234 || header.Version > 500)
                     {
-                        throw new Exception($"Version {header.Version} Not Supported");
+                        error.NotifyError($"Version {header.Version} Not Supported", 1);
                     }
 
                     if (filesCount <= 0)
                     {
-                        throw new Exception("Invalid Files Count");
+                        error.NotifyError("Invalid Files Count", 1);
                     }
 
                     if (header.ArchivedFilesHeaderSize <= 0)
                     {
-                        throw new Exception("Invalid Archived Files Header Size");
+                        error.NotifyError("Invalid Archived Files Header Size", 1);
                     }
 
                     header.SetChecksum();
@@ -313,12 +315,12 @@ namespace Ypf_Manager
 
                         if (calculatedNameChecksum != af.NameChecksum)
                         {
-                            throw new Exception("Invalid Name Checksum");
+                            error.NotifyError("Invalid Name Checksum", 1);
                         }
 
                         if (!Enum.IsDefined(typeof(YPFEntry.FileType), af.Type))
                         {
-                            throw new Exception("Unexpected File Type");
+                            error.NotifyError("Unexpected File Type", 1);
                         }
 
                         header.ArchivedFiles.Add(af);
@@ -354,7 +356,7 @@ namespace Ypf_Manager
 
                                 if (af.DataChecksum != calculatedDataChecksum)
                                 {
-                                    throw new Exception("Invalid Data Checksum");
+                                    error.NotifyError("Invalid Data Checksum", 1);
                                 }
 
                                 ms.Position = 0;
@@ -370,7 +372,7 @@ namespace Ypf_Manager
 
                                         if (decompressedFileStream.Length != af.RawFileSize)
                                         {
-                                            throw new Exception("Invalid Decompressed File Size");
+                                            error.NotifyError("Invalid Decompressed File Size", 1);
                                         }
 
                                         decompressedFileStream.Position = 0;
@@ -389,12 +391,12 @@ namespace Ypf_Manager
             }
         }
 
-        private static byte OneComplement(byte i)
+        private byte OneComplement(byte i)
         {
             return (byte)(~i & 0xFF);
         }
 
-        private static void CopyStream(Stream input, Stream output, Int64 length)
+        private void CopyStream(Stream input, Stream output, Int64 length)
         {
             int bufferSize = 4096;
 
@@ -412,7 +414,7 @@ namespace Ypf_Manager
             }
         }
 
-        public static void PrintInfo(String inputFile)
+        public void PrintInfo(String inputFile)
         {
             Console.WriteLine("[*PRINT INFO*]");
             Console.WriteLine($"File: {inputFile}");
@@ -426,7 +428,7 @@ namespace Ypf_Manager
 
                     if (!Enumerable.SequenceEqual(header.Signature, br.ReadBytes(4)))
                     {
-                        throw new Exception("Invalid Archive Signature");
+                        error.NotifyError("Invalid Archive Signature", 1);
                     }
 
                     header.Version = br.ReadInt32();
@@ -437,21 +439,21 @@ namespace Ypf_Manager
 
                     if (header.Version < 0)
                     {
-                        throw new Exception("Invalid Version");
+                        error.NotifyError("Invalid Version", 1);
                     }
-                    else if (header.Version < 234 || header.Version > 500)
+                    else if (header.Version < 1 || header.Version > 2)
                     {
-                        throw new Exception($"Version {header.Version} Not Supported");
+                        error.NotifyError($"Version {header.Version} Not Supported", 1);
                     }
 
                     if (filesCount <= 0)
                     {
-                        throw new Exception("Invalid Files Count");
+                        error.NotifyError("Invalid Files Count", 1);
                     }
 
                     if (header.ArchivedFilesHeaderSize <= 0)
                     {
-                        throw new Exception("Invalid Archived Files Header Size");
+                        error.NotifyError("Invalid Archived Files Header Size", 1);
                     }
 
                     header.SetChecksum();
@@ -506,12 +508,12 @@ namespace Ypf_Manager
 
                         if (calculatedNameChecksum != af.NameChecksum)
                         {
-                            throw new Exception("Invalid Name Checksum");
+                            error.NotifyError("Invalid Name Checksum", 1);
                         }
 
                         if (!Enum.IsDefined(typeof(YPFEntry.FileType), af.Type))
                         {
-                            throw new Exception("Unexpected File Type");
+                            error.NotifyError("Unexpected File Type", 1);
                         }
 
                         Console.WriteLine($"[{i + 1}/{filesCount}]");
@@ -549,7 +551,7 @@ namespace Ypf_Manager
 
                             if (af.DataChecksum != calculatedDataChecksum)
                             {
-                                throw new Exception("Invalid Data Checksum");
+                                error.NotifyError("Invalid Data Checksum", 1);
                             }
 
                             ms.Position = 0;
@@ -565,7 +567,7 @@ namespace Ypf_Manager
 
                                     if (decompressedFileStream.Length != af.RawFileSize)
                                     {
-                                        throw new Exception("Invalid Decompressed File Size");
+                                        error.NotifyError("Invalid Decompressed File Size", 1);
                                     }
 
                                 }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Ypf_Manager
 {
-    public class YPFHeader
+    class YPFHeader
     {
         // YPF\0
         public byte[] Signature => new byte[] { 0x59, 0x50, 0x46, 0x00 };

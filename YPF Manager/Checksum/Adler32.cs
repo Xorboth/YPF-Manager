@@ -33,7 +33,7 @@ using System;
 namespace Ypf_Manager
 {
 
-    public class Adler32 : Checksum
+    class Adler32 : Checksum
     {
         public override string Name => "Adler32";
 

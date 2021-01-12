@@ -2,7 +2,7 @@
 
 namespace Ypf_Manager
 {
-    public class YPFEntry
+    class YPFEntry
     {
         public String FileName { get; set; }
 
