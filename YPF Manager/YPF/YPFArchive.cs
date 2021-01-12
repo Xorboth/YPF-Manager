@@ -68,6 +68,12 @@ namespace Ypf_Manager
                     {
                         using (FileStream inputFileStream = new FileStream($@"{inputFolder}\{entry.FileName}{(entry.Type == YPFEntry.FileType.ycg ? ".ycg" : "")}", FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.SequentialScan))
                         {
+                            // Check if the current file saturated the 32 filesize bits
+                            if (inputFileStream.Length > Int32.MaxValue)
+                            {
+                                throw new Exception("Max filesize reached for the current YPF version");
+                            }
+
                             rawFileStream.Capacity = (Int32)inputFileStream.Length;
                             CopyStream(inputFileStream, rawFileStream, inputFileStream.Length);
                         }
@@ -158,6 +164,12 @@ namespace Ypf_Manager
                                     header.ArchivedFiles[j].DataChecksum = calculatedDataChecksum;
                                 }
                             }
+                        }
+
+                        // Check if the current file saturated the 32 offset bits
+                        if (header.Version < 479 && outputFileStream.Position > Int32.MaxValue)
+                        {
+                            throw new Exception("Max offset reached for the current YPF version");
                         }
                     }
                 }
