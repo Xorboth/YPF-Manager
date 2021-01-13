@@ -8,7 +8,7 @@ namespace Ypf_Manager
     {
 
         //
-        // Private variables
+        // Variables
         //
 
         private readonly StringBuilder sb;

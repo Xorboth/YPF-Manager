@@ -35,24 +35,43 @@ namespace Ypf_Manager
 
     class Adler32 : Checksum
     {
+
+        //
+        // Variables
+        //
+
         public override string Name => "Adler32";
 
-        /* largest prime smaller than 65536 */
+        // Largest prime smaller than 65536
         const UInt32 BASE = 65521;
 
         const Int32 NMAX = 5552;
 
+
+        //
+        // Compute byte array hash with Adler32 algorithm
+        //
+
         public override UInt32 ComputeHash(byte[] data)
         {
+            //
+            // Original function parameters
+            //
+
             UInt32 adler = 1;
             Int32 dataIndex = 0;
             Int32 len = data.Length;
 
-            /* split Adler-32 into component sums */
+
+            //
+            // Adler32 compute hash
+            //
+
+            // Split Adler-32 into component sums */
             UInt32 sum2 = (adler >> 16) & 0xffff;
             adler &= 0xffff;
 
-            /* in case short lengths are provided, keep it somewhat fast */
+            // In case short lengths are provided, keep it somewhat fast
             if (len < 16)
             {
                 while (0 != len--)
@@ -63,21 +82,23 @@ namespace Ypf_Manager
                 if (adler >= BASE)
                     adler -= BASE;
 
-                /* only added so many BASE's */
+                // Only added so many BASE's
                 sum2 %= BASE;
+
                 return adler | (sum2 << 16);
             }
 
-            /* do length NMAX blocks -- requires just one modulo operation */
+            // Do length NMAX blocks -- requires just one modulo operation
             while (len >= NMAX)
             {
                 len -= NMAX;
 
-                /* NMAX is divisible by 16 */
+                // NMAX is divisible by 16
                 Int32 n = NMAX / 16;
+
                 do
                 {
-                    /* 16 sums unrolled */
+                    // 16 sums unrolled
 
                     // DO16(buf);
                     adler += data[dataIndex]; sum2 += adler;
@@ -103,10 +124,10 @@ namespace Ypf_Manager
                 sum2 %= BASE;
             }
 
-            /* do remaining bytes (less than NMAX, still just one modulo) */
+            // Do remaining bytes (less than NMAX, still just one modulo)
             if (0 != len)
             {
-                /* avoid modulos if none remaining */
+                // Avoid modulos if none remaining
                 while (len >= 16)
                 {
                     len -= 16;
@@ -140,7 +161,7 @@ namespace Ypf_Manager
                 sum2 %= BASE;
             }
 
-            /* return recombined sums */
+            // Return recombined sums
             return adler | (sum2 << 16);
         }
     }

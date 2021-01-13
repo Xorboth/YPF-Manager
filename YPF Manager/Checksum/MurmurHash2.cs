@@ -9,7 +9,8 @@
  *   
  *  1.  It will not work incrementally.
  *  2.  It will not produce the same results on little-endian and big-endian
- *      machines.    */
+ *      machines.
+*/
 
 using System;
 
@@ -18,30 +19,41 @@ namespace Ypf_Manager
     class MurmurHash2 : Checksum
     {
 
+        //
+        // Variables
+        //
+
         public override string Name => "MurmurHash2";
+
+
+        //
+        // Compute byte array hash with MurmurHash2 algorithm
+        //
 
         public override UInt32 ComputeHash(byte[] data)
         {
-            return ComputeHash(data, 0);
-        }
+            //
+            // Original function parameters
+            //
+            UInt32 seed = 0;
+            Int32 len = data.Length;
 
-        private UInt32 ComputeHash(byte[] data, UInt32 seed)
-        {
-            /*  'm' and 'r' are mixing constants generated offline.
-                They're not really 'magic', they just happen to work well.  */
 
+            //
+            // MurmurHash2 compute hash
+            //
+
+            // 'm' and 'r' are mixing constants generated offline.
+            // They're not really 'magic', they just happen to work well.
             const UInt32 m = 0x5bd1e995;
             const Int32 r = 24;
 
 
-            /*  Initialize the hash to a 'random' value  */
-
-            Int32 len = data.Length;
+            // Initialize the hash to a 'random' value
             UInt32 h = seed ^ (UInt32)len;
 
 
-            /*  Mix 4 bytes at a time into the hash */
-
+            // Mix 4 bytes at a time into the hash
             Int32 dataIndex = 0;
 
             while (len >= 4)
@@ -60,8 +72,7 @@ namespace Ypf_Manager
             }
 
 
-            /*  Handle the last few bytes of the input array    */
-
+            // Handle the last few bytes of the input array
             if (len == 3)
             {
                 h ^= (UInt32)(data[dataIndex + 2] << 16);
@@ -81,9 +92,7 @@ namespace Ypf_Manager
                 h *= m;
             }
 
-            /*  Do a few final mixes of the hash to ensure the last few
-                bytes are well-incorporated.    */
-
+            // Do a few final mixes of the hash to ensure the last few bytes are well-incorporated.
             h ^= h >> 13;
             h *= m;
             h ^= h >> 15;

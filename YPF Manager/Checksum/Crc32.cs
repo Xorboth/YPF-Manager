@@ -7,6 +7,11 @@ namespace Ypf_Manager
 
     class Crc32 : Checksum
     {
+
+        //
+        // Variables
+        //
+
         public override string Name => "CRC32";
 
         private readonly UInt32[] Crc32Table =
@@ -45,15 +50,23 @@ namespace Ypf_Manager
             0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d
         };
 
+
+        //
+        // Compute byte array hash with CRC-32 algorithm
+        //
+
         public override UInt32 ComputeHash(byte[] data)
         {
+            // Initialize CRC-32 to starting value
             UInt32 crc32 = 0xffffffff;
 
             for (int i = 0; i < data.Length; i++)
             {
+                //Crc32Table is an array of 256 32-bit constants
                 crc32 = (crc32 >> 8) ^ Crc32Table[(byte)((crc32 ^ data[i]) & 0xFF)];
             }
 
+            // Finalize the CRC-32 value by inverting all the bits
             return ~crc32;
         }
     }

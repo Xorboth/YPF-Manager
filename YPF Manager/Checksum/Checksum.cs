@@ -5,17 +5,32 @@ namespace Ypf_Manager
 {
     abstract class Checksum
     {
+
+        //
+        // Variables
+        //
+
         public abstract String Name { get; }
+
+
+        //
+        // Compute byte array hash with implemented algorithm
+        //
 
         public abstract UInt32 ComputeHash(Byte[] inputBytes);
 
+
+        //
+        // Compute stream hash with implemented algorithm
+        //
+
         public UInt32 ComputeHash(Stream inputStream, int length)
         {
-            Byte[] buf = new byte[length];
+            Byte[] buffer = new Byte[length];
 
-            inputStream.Read(buf, 0, length);
+            inputStream.Read(buffer, 0, length);
 
-            return ComputeHash(buf);
+            return ComputeHash(buffer);
         }
 
     }

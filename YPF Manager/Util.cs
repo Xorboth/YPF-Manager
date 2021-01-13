@@ -10,9 +10,9 @@ namespace Ypf_Manager
         // Returns the one complement of a given byte
         //
 
-        public static byte OneComplement(byte i)
+        public static Byte OneComplement(Byte i)
         {
-            return (byte)~i;
+            return (Byte)~i;
         }
 
 
@@ -22,15 +22,15 @@ namespace Ypf_Manager
 
         public static void CopyStream(Stream input, Stream output, Int64 length)
         {
-            int bufferSize = 4096;
+            Int32 bufferSize = 4096;
 
-            byte[] buffer = new byte[bufferSize];
+            Byte[] buffer = new Byte[bufferSize];
 
             Int64 bytesToRead = length;
 
             while (bytesToRead > 0)
             {
-                int bytesRead = input.Read(buffer, 0, (Int32)Math.Min(bufferSize, bytesToRead));
+                Int32 bytesRead = input.Read(buffer, 0, (Int32)Math.Min(bufferSize, bytesToRead));
 
                 output.Write(buffer, 0, bytesRead);
 

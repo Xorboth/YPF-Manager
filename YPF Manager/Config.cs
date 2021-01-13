@@ -21,7 +21,7 @@ namespace Ypf_Manager
 
 
         //
-        // Properties
+        // Variables
         //
 
         public static String ExecutableLocation()
