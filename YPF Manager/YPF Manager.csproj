@@ -48,7 +48,8 @@
     <Compile Include="Checksum\Adler32.cs" />
     <Compile Include="Checksum\Crc32.cs" />
     <Compile Include="Config.cs" />
-    <Compile Include="ErrorHandler.cs" />
+    <Compile Include="Log.cs" />
+    <Compile Include="Util.cs" />
     <Compile Include="YPF\YPFArchive.cs" />
     <Compile Include="YPF\YPFEntry.cs" />
     <Compile Include="YPF\YPFHeader.cs" />

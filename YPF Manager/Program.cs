@@ -7,26 +7,28 @@ namespace Ypf_Manager
     {
         static void Main(string[] args)
         {
-            ErrorHandler error = ErrorHandler.Instance;
-            Config config = Config.Instance;
+            // Set variables
+            Log log = new Log();
+            Config config = new Config();
 
+            // Header
             Console.WriteLine("YPF Manager v0.1");
             Console.WriteLine();
             Console.WriteLine();
 
             try
             {
+                // Scan args
                 config.Set(args);
 
-                YPFArchive archive = new YPFArchive();
-
+                // Process current operation mode
                 switch (config.Mode)
                 {
                     case Config.OperationMode.CreateArchive:
 
                         foreach (String f in config.FoldersToProcess)
                         {
-                            archive.Create(f, $"{f}.ypf", config.EngineVersion);
+                            YPFArchive.Create(f, $"{f}.ypf", config.EngineVersion);
                         }
                         break;
 
@@ -34,7 +36,7 @@ namespace Ypf_Manager
 
                         foreach (String f in config.FilesToProcess)
                         {
-                            archive.Extract(f, $@"{Path.GetDirectoryName(f)}\{Path.GetFileNameWithoutExtension(f)}");
+                            YPFArchive.Extract(f, $@"{Path.GetDirectoryName(f)}\{Path.GetFileNameWithoutExtension(f)}");
                         }
                         break;
 
@@ -42,7 +44,7 @@ namespace Ypf_Manager
 
                         foreach (String f in config.FilesToProcess)
                         {
-                            archive.PrintInfo(f);
+                            YPFArchive.PrintInfo(f);
                         }
                         break;
 
@@ -65,14 +67,20 @@ namespace Ypf_Manager
                         Console.WriteLine("\t-w\t\t\tWait for user input before exit");
 
                         break;
+
                 }
             }
             catch (Exception ex)
             {
+                // Print error to console
                 Console.WriteLine(ex.Message);
-                error.SaveLog();
+
+                // Save error to log
+                log.Add(ex.Message);
+                log.Save();
             }
-            
+
+            // Wait for user input if -w argument is provided
             if (config.WaitForUserInputBeforeExit)
             {
                 Console.WriteLine();

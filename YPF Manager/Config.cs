@@ -6,25 +6,6 @@ namespace Ypf_Manager
 {
     class Config
     {
-        //
-        // Singleton setup
-        //
-
-        private static Config instance = null;
-
-        public static Config Instance
-        {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = new Config();
-                }
-
-                return instance;
-            }
-        }
-
 
         //
         // Enums
