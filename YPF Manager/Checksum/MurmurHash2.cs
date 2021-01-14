@@ -35,6 +35,7 @@ namespace Ypf_Manager
             //
             // Original function parameters
             //
+
             UInt32 seed = 0;
             Int32 len = data.Length;
 

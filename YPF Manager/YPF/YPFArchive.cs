@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Ypf_Manager
 {
-    class YPFArchive
+    static class YPFArchive
     {
 
         //
@@ -22,16 +22,7 @@ namespace Ypf_Manager
 
             Console.WriteLine("Initializing header");
 
-            if (version < 234 || version > 500)
-            {
-                throw new Exception($"Version {version} Not Supported");
-            }
-
-            YPFHeader header = new YPFHeader();
-            header.Version = version;
-
-            header.SetChecksum();
-            header.SetFileNameEncryptionKey();
+            YPFHeader header = new YPFHeader(version);
 
             String[] filesToProcess = Directory.GetFiles(inputFolder, "*.*", SearchOption.AllDirectories);
 
@@ -206,7 +197,7 @@ namespace Ypf_Manager
                         throw new Exception("File name length can't be longer than 255 bytes (Shift-JIS)");
                     }
 
-                    byte lengthEncoded = Util.OneComplement((byte)header.GetLengthSwappingTable().ToList().IndexOf((byte)encodedName.Length));
+                    byte lengthEncoded = Util.OneComplement((byte)header.LengthSwappingTable.ToList().IndexOf((byte)encodedName.Length));
 
                     bw.Write(lengthEncoded);
 
@@ -269,15 +260,6 @@ namespace Ypf_Manager
 
                     fs.Position += 16;
 
-                    if (header.Version < 0)
-                    {
-                        throw new Exception("Invalid Version");
-                    }
-                    else if (header.Version < 234 || header.Version > 500)
-                    {
-                        throw new Exception($"Version {header.Version} Not Supported");
-                    }
-
                     if (filesCount <= 0)
                     {
                         throw new Exception("Invalid Files Count");
@@ -288,9 +270,6 @@ namespace Ypf_Manager
                         throw new Exception("Invalid Archived Files Header Size");
                     }
 
-                    header.SetChecksum();
-                    header.SetFileNameEncryptionKey();
-
                     for (int i = 0; i < filesCount; i++)
                     {
                         YPFEntry af = new YPFEntry();
@@ -298,7 +277,7 @@ namespace Ypf_Manager
                         af.NameChecksum = br.ReadUInt32();
 
                         Byte fileNameLengthEncoded = Util.OneComplement(br.ReadByte());
-                        Byte fileNameLengthDecoded = header.GetLengthSwappingTable()[fileNameLengthEncoded];
+                        Byte fileNameLengthDecoded = header.LengthSwappingTable[fileNameLengthEncoded];
 
                         Byte[] fileNameEncoded = br.ReadBytes(fileNameLengthDecoded);
 
@@ -432,15 +411,6 @@ namespace Ypf_Manager
 
                     fs.Position += 16;
 
-                    if (header.Version < 0)
-                    {
-                        throw new Exception("Invalid Version");
-                    }
-                    else if (header.Version < 234 || header.Version > 500)
-                    {
-                        throw new Exception($"Version {header.Version} Not Supported");
-                    }
-
                     if (filesCount <= 0)
                     {
                         throw new Exception("Invalid Files Count");
@@ -450,9 +420,6 @@ namespace Ypf_Manager
                     {
                         throw new Exception("Invalid Archived Files Header Size");
                     }
-
-                    header.SetChecksum();
-                    header.SetFileNameEncryptionKey();
 
                     Console.WriteLine("[HEADER]");
                     Console.WriteLine($"Version: {header.Version}");
@@ -472,7 +439,7 @@ namespace Ypf_Manager
                         af.NameChecksum = br.ReadUInt32();
 
                         Byte fileNameLengthEncoded = Util.OneComplement(br.ReadByte());
-                        Byte fileNameLengthDecoded = header.GetLengthSwappingTable()[fileNameLengthEncoded];
+                        Byte fileNameLengthDecoded = header.LengthSwappingTable[fileNameLengthEncoded];
 
                         Byte[] fileNameEncoded = br.ReadBytes(fileNameLengthDecoded);
 
