@@ -20,7 +20,7 @@ namespace Ypf_Manager
         // Copy data from input stream to ouput stream
         //
 
-        public static void CopyStream(Stream input, Stream output, Int64 length)
+        public static void CopyStream(Stream inputStream, Stream outputStream, Int64 length)
         {
             Int32 bufferSize = 4096;
 
@@ -30,12 +30,53 @@ namespace Ypf_Manager
 
             while (bytesToRead > 0)
             {
-                Int32 bytesRead = input.Read(buffer, 0, (Int32)Math.Min(bufferSize, bytesToRead));
+                Int32 bytesRead = inputStream.Read(buffer, 0, (Int32)Math.Min(bufferSize, bytesToRead));
 
-                output.Write(buffer, 0, bytesRead);
+                outputStream.Write(buffer, 0, bytesRead);
 
                 bytesToRead -= bytesRead;
             }
+        }
+
+
+        //
+        // Decompress from input stream to memory stream
+        //
+
+        public static MemoryStream DecompressStream(Stream inputStream, int decompressedSize)
+        {
+            MemoryStream decompressedFileStream = new MemoryStream(decompressedSize);
+
+            using (var decompressionStream = new Ionic.Zlib.ZlibStream(inputStream, Ionic.Zlib.CompressionMode.Decompress, true))
+            {
+                decompressionStream.CopyTo(decompressedFileStream);
+            }
+
+            decompressedFileStream.Position = 0;
+
+            if (decompressedFileStream.Length != decompressedSize)
+            {
+                throw new Exception("Invalid Decompressed File Size");
+            }
+
+            return decompressedFileStream;
+        }
+
+
+        //
+        // Compress from input stream to memory stream
+        //
+
+        public static MemoryStream CompressStream(Stream inputStream)
+        {
+            MemoryStream compressedFileStream = new MemoryStream();
+
+            using (var compressionStream = new Ionic.Zlib.ZlibStream(compressedFileStream, Ionic.Zlib.CompressionMode.Compress, Ionic.Zlib.CompressionLevel.Level9, true))
+            {
+                CopyStream(inputStream, compressionStream, inputStream.Length);
+            }
+
+            return compressedFileStream;
         }
 
     }

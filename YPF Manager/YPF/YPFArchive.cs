@@ -84,86 +84,55 @@ namespace Ypf_Manager
                         header.ArchivedFiles[j].Offset = outputFileStream.Position;
                         header.ArchivedFiles[j].RawFileSize = (Int32)rawFileStream.Length;
 
-                        if (header.Version < 490)
+                        using (MemoryStream compressedFileStream = Util.CompressStream(rawFileStream))
                         {
-                            UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(rawFileStream, (Int32)rawFileStream.Length);
 
-                            YPFEntry checkDuplicate = header.ArchivedFiles.FirstOrDefault(x => x.DataChecksum == calculatedDataChecksum);
-
-                            if (checkDuplicate != null)
+                            // Check if the compressed file is smaller than the original one
+                            if (compressedFileStream.Length < rawFileStream.Length)
                             {
-                                header.ArchivedFiles[j].Offset = checkDuplicate.Offset;
+                                compressedFileStream.Position = 0;
+
+                                UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(compressedFileStream, (Int32)compressedFileStream.Length);
+
+                                YPFEntry checkDuplicate = header.ArchivedFiles.FirstOrDefault(x => x.DataChecksum == calculatedDataChecksum);
+
+                                if (checkDuplicate != null)
+                                {
+                                    header.ArchivedFiles[j].Offset = checkDuplicate.Offset;
+                                }
+                                else
+                                {
+                                    compressedFileStream.Position = 0;
+
+                                    Util.CopyStream(compressedFileStream, outputFileStream, compressedFileStream.Length);
+                                }
+
+                                header.ArchivedFiles[j].CompressedFileSize = (Int32)compressedFileStream.Length;
+                                header.ArchivedFiles[j].IsCompressed = true;
+                                header.ArchivedFiles[j].DataChecksum = calculatedDataChecksum;
                             }
                             else
                             {
                                 rawFileStream.Position = 0;
 
-                                Util.CopyStream(rawFileStream, outputFileStream, rawFileStream.Length);
-                            }
+                                UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(rawFileStream, (Int32)rawFileStream.Length);
 
-                            header.ArchivedFiles[j].CompressedFileSize = (Int32)rawFileStream.Length;
-                            header.ArchivedFiles[j].IsCompressed = false;
-                            header.ArchivedFiles[j].DataChecksum = calculatedDataChecksum;
-                        }
-                        else
-                        {
-                            using (MemoryStream compressedFileStream = new MemoryStream())
-                            {
-                                // Best compression
-                                compressedFileStream.WriteByte(0x78);
-                                compressedFileStream.WriteByte(0xDA);
+                                YPFEntry checkDuplicate = header.ArchivedFiles.FirstOrDefault(x => x.DataChecksum == calculatedDataChecksum);
 
-                                using (var compressionStream = new DeflateStream(compressedFileStream, CompressionLevel.Optimal, true))
+                                if (checkDuplicate != null)
                                 {
-                                    Util.CopyStream(rawFileStream, compressionStream, rawFileStream.Length);
-                                }
-
-                                if (compressedFileStream.Length < rawFileStream.Length)
-                                {
-                                    compressedFileStream.Position = 0;
-
-                                    UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(compressedFileStream, (Int32)compressedFileStream.Length);
-
-                                    YPFEntry checkDuplicate = header.ArchivedFiles.FirstOrDefault(x => x.DataChecksum == calculatedDataChecksum);
-
-                                    if (checkDuplicate != null)
-                                    {
-                                        header.ArchivedFiles[j].Offset = checkDuplicate.Offset;
-                                    }
-                                    else
-                                    {
-                                        compressedFileStream.Position = 0;
-
-                                        Util.CopyStream(compressedFileStream, outputFileStream, compressedFileStream.Length);
-                                    }
-
-                                    header.ArchivedFiles[j].CompressedFileSize = (Int32)compressedFileStream.Length;
-                                    header.ArchivedFiles[j].IsCompressed = true;
-                                    header.ArchivedFiles[j].DataChecksum = calculatedDataChecksum;
+                                    header.ArchivedFiles[j].Offset = checkDuplicate.Offset;
                                 }
                                 else
                                 {
                                     rawFileStream.Position = 0;
 
-                                    UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(rawFileStream, (Int32)rawFileStream.Length);
-
-                                    YPFEntry checkDuplicate = header.ArchivedFiles.FirstOrDefault(x => x.DataChecksum == calculatedDataChecksum);
-
-                                    if (checkDuplicate != null)
-                                    {
-                                        header.ArchivedFiles[j].Offset = checkDuplicate.Offset;
-                                    }
-                                    else
-                                    {
-                                        rawFileStream.Position = 0;
-
-                                        Util.CopyStream(rawFileStream, outputFileStream, rawFileStream.Length);
-                                    }
-
-                                    header.ArchivedFiles[j].CompressedFileSize = (Int32)rawFileStream.Length;
-                                    header.ArchivedFiles[j].IsCompressed = false;
-                                    header.ArchivedFiles[j].DataChecksum = calculatedDataChecksum;
+                                    Util.CopyStream(rawFileStream, outputFileStream, rawFileStream.Length);
                                 }
+
+                                header.ArchivedFiles[j].CompressedFileSize = (Int32)rawFileStream.Length;
+                                header.ArchivedFiles[j].IsCompressed = false;
+                                header.ArchivedFiles[j].DataChecksum = calculatedDataChecksum;
                             }
                         }
 
@@ -245,137 +214,44 @@ namespace Ypf_Manager
 
             using (FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.SequentialScan))
             {
-                using (BinaryReader br = new BinaryReader(fs))
+                YPFHeader header = new YPFHeader(fs);
+
+                // Order by offset to improve read performance
+                header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.Offset).ToList();
+
+                for (int i = 0; i < header.ArchivedFiles.Count; i++)
                 {
-                    YPFHeader header = new YPFHeader();
+                    YPFEntry entry = header.ArchivedFiles[i];
 
-                    if (!Enumerable.SequenceEqual(header.Signature, br.ReadBytes(4)))
+                    Console.WriteLine($"[{i + 1}/{header.ArchivedFiles.Count}] Extracting {entry.FileName}");
+
+                    String customExtension = (entry.Type == YPFEntry.FileType.ycg ? ".ycg" : "");
+                    String outputFileName = $@"{outputFolder}\{entry.FileName}{customExtension}";
+
+                    fs.Position = entry.Offset;
+
+                    using (MemoryStream ms = new MemoryStream(entry.CompressedFileSize))
                     {
-                        throw new Exception("Invalid Archive Signature");
-                    }
+                        Util.CopyStream(fs, ms, entry.CompressedFileSize);
 
-                    header.Version = br.ReadInt32();
-                    int filesCount = br.ReadInt32();
-                    header.ArchivedFilesHeaderSize = br.ReadInt32();
+                        ms.Position = 0;
 
-                    fs.Position += 16;
-
-                    if (filesCount <= 0)
-                    {
-                        throw new Exception("Invalid Files Count");
-                    }
-
-                    if (header.ArchivedFilesHeaderSize <= 0)
-                    {
-                        throw new Exception("Invalid Archived Files Header Size");
-                    }
-
-                    for (int i = 0; i < filesCount; i++)
-                    {
-                        YPFEntry af = new YPFEntry();
-
-                        af.NameChecksum = br.ReadUInt32();
-
-                        Byte fileNameLengthEncoded = Util.OneComplement(br.ReadByte());
-                        Byte fileNameLengthDecoded = header.LengthSwappingTable[fileNameLengthEncoded];
-
-                        Byte[] fileNameEncoded = br.ReadBytes(fileNameLengthDecoded);
-
-                        for (int j = 0; j < fileNameLengthDecoded; j++)
-                        {
-                            fileNameEncoded[j] = (byte)(Util.OneComplement(fileNameEncoded[j]) ^ header.FileNameEncryptionKey);
-                        }
-
-                        af.FileName = header.Encoding.GetString(fileNameEncoded);
-                        af.Type = (YPFEntry.FileType)br.ReadByte();
-                        af.IsCompressed = (br.ReadByte() == 1);
-                        af.RawFileSize = br.ReadInt32();
-                        af.CompressedFileSize = br.ReadInt32();
-
-                        if (header.Version < 479)
-                        {
-                            af.Offset = br.ReadInt32();
-                        }
-                        else
-                        {
-                            af.Offset = br.ReadInt64();
-                        }
-
-                        af.DataChecksum = br.ReadUInt32();
-
-                        UInt32 calculatedNameChecksum = header.NameChecksum.ComputeHash(fileNameEncoded);
-
-                        if (calculatedNameChecksum != af.NameChecksum)
-                        {
-                            throw new Exception("Invalid Name Checksum");
-                        }
-
-                        if (!Enum.IsDefined(typeof(YPFEntry.FileType), af.Type))
-                        {
-                            throw new Exception("Unexpected File Type");
-                        }
-
-                        header.ArchivedFiles.Add(af);
-                    }
-
-                    // Order by offset to improve read performance
-                    header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.Offset).ToList();
-
-                    foreach (YPFEntry af in header.ArchivedFiles)
-                    {
-                        Console.WriteLine($"Extracting {af.FileName}");
-
-                        String outputFileName = $@"{outputFolder}\{af.FileName}";
-
-                        if (af.Type == YPFEntry.FileType.ycg)
-                        {
-                            outputFileName += ".ycg";
-                        }
+                        header.ValidateDataChecksum(ms, entry.CompressedFileSize, entry.DataChecksum);
 
                         Directory.CreateDirectory(Path.GetDirectoryName(outputFileName));
 
-                        fs.Position = af.Offset;
-
                         using (FileStream fs1 = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.None))
                         {
-                            using (MemoryStream ms = new MemoryStream(af.CompressedFileSize))
+                            if (entry.IsCompressed)
                             {
-                                Util.CopyStream(fs, ms, af.CompressedFileSize);
-
-                                ms.Position = 0;
-
-                                UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(ms, (Int32)ms.Length);
-
-                                if (af.DataChecksum != calculatedDataChecksum)
+                                using (MemoryStream decompressedFileStream = Util.DecompressStream(ms, entry.RawFileSize))
                                 {
-                                    throw new Exception("Invalid Data Checksum");
+                                    Util.CopyStream(decompressedFileStream, fs1, entry.RawFileSize);
                                 }
-
-                                ms.Position = 0;
-
-                                if (af.IsCompressed)
-                                {
-                                    using (MemoryStream decompressedFileStream = new MemoryStream(af.RawFileSize))
-                                    {
-                                        using (GZipStream decompressionStream = new GZipStream(ms, CompressionMode.Decompress))
-                                        {
-                                            decompressionStream.CopyTo(decompressedFileStream);
-                                        }
-
-                                        if (decompressedFileStream.Length != af.RawFileSize)
-                                        {
-                                            throw new Exception("Invalid Decompressed File Size");
-                                        }
-
-                                        decompressedFileStream.Position = 0;
-
-                                        Util.CopyStream(decompressedFileStream, fs1, af.RawFileSize);
-                                    }
-                                }
-                                else
-                                {
-                                    Util.CopyStream(ms, fs1, af.RawFileSize);
-                                }
+                            }
+                            else
+                            {
+                                Util.CopyStream(ms, fs1, entry.RawFileSize);
                             }
                         }
                     }
@@ -396,149 +272,50 @@ namespace Ypf_Manager
 
             using (FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.SequentialScan))
             {
-                using (BinaryReader br = new BinaryReader(fs))
+                YPFHeader header = new YPFHeader(fs);
+
+                Console.WriteLine("[HEADER]");
+                Console.WriteLine($"Version: {header.Version}");
+                Console.WriteLine($"Files Count: {header.ArchivedFiles.Capacity}");
+                Console.WriteLine($"Header Size: {header.ArchivedFilesHeaderSize}");
+                Console.WriteLine($"Name Checksum Algorithm: {header.NameChecksum.Name}");
+                Console.WriteLine($"Data Checksum Algorithm: {header.DataChecksum.Name}");
+                Console.WriteLine($"Filename Encryption Key: {header.FileNameEncryptionKey:x2}");
+                Console.WriteLine();
+
+                Console.WriteLine("[FILES]");
+
+                for (int i = 0; i < header.ArchivedFiles.Count; i++)
                 {
-                    YPFHeader header = new YPFHeader();
+                    YPFEntry entry = header.ArchivedFiles[i];
 
-                    if (!Enumerable.SequenceEqual(header.Signature, br.ReadBytes(4)))
-                    {
-                        throw new Exception("Invalid Archive Signature");
-                    }
-
-                    header.Version = br.ReadInt32();
-                    int filesCount = br.ReadInt32();
-                    header.ArchivedFilesHeaderSize = br.ReadInt32();
-
-                    fs.Position += 16;
-
-                    if (filesCount <= 0)
-                    {
-                        throw new Exception("Invalid Files Count");
-                    }
-
-                    if (header.ArchivedFilesHeaderSize <= 0)
-                    {
-                        throw new Exception("Invalid Archived Files Header Size");
-                    }
-
-                    Console.WriteLine("[HEADER]");
-                    Console.WriteLine($"Version: {header.Version}");
-                    Console.WriteLine($"Files Count: {filesCount}");
-                    Console.WriteLine($"Header Size: {header.ArchivedFilesHeaderSize}");
-                    Console.WriteLine($"Name Checksum Algorithm: {header.NameChecksum.Name}");
-                    Console.WriteLine($"Data Checksum Algorithm: {header.DataChecksum.Name}");
-                    Console.WriteLine($"Filename Encryption Key: {header.FileNameEncryptionKey.ToString("x2")}");
+                    Console.WriteLine($"[{i + 1}/{header.ArchivedFiles.Capacity}]");
+                    Console.WriteLine($"\tFilename: {entry.FileName}");
+                    Console.WriteLine($"\tCompressed: {entry.IsCompressed}");
+                    Console.WriteLine($"\tSize: {entry.RawFileSize}");
+                    Console.WriteLine($"\tCompressed Size: {entry.CompressedFileSize}");
+                    Console.WriteLine($"\tOffset: {entry.Offset}");
+                    Console.WriteLine($"\tType: {entry.Type}");
+                    Console.WriteLine($"\tName Checksum: {entry.NameChecksum:x8}");
+                    Console.WriteLine($"\tData Checksum: {entry.DataChecksum:x8}");
                     Console.WriteLine();
-
-                    Console.WriteLine("[FILES]");
-
-                    for (int i = 0; i < filesCount; i++)
-                    {
-                        YPFEntry af = new YPFEntry();
-
-                        af.NameChecksum = br.ReadUInt32();
-
-                        Byte fileNameLengthEncoded = Util.OneComplement(br.ReadByte());
-                        Byte fileNameLengthDecoded = header.LengthSwappingTable[fileNameLengthEncoded];
-
-                        Byte[] fileNameEncoded = br.ReadBytes(fileNameLengthDecoded);
-
-                        for (int j = 0; j < fileNameLengthDecoded; j++)
-                        {
-                            fileNameEncoded[j] = (byte)(Util.OneComplement(fileNameEncoded[j]) ^ header.FileNameEncryptionKey);
-                        }
-
-                        af.FileName = header.Encoding.GetString(fileNameEncoded);
-
-                        af.Type = (YPFEntry.FileType)br.ReadByte();
-                        af.IsCompressed = (br.ReadByte() == 1);
-                        af.RawFileSize = br.ReadInt32();
-                        af.CompressedFileSize = br.ReadInt32();
-
-                        if (header.Version < 479)
-                        {
-                            af.Offset = br.ReadInt32();
-                        }
-                        else
-                        {
-                            af.Offset = br.ReadInt64();
-                        }
-
-                        af.DataChecksum = br.ReadUInt32();
-
-                        UInt32 calculatedNameChecksum = header.NameChecksum.ComputeHash(fileNameEncoded);
-
-                        if (calculatedNameChecksum != af.NameChecksum)
-                        {
-                            throw new Exception("Invalid Name Checksum");
-                        }
-
-                        if (!Enum.IsDefined(typeof(YPFEntry.FileType), af.Type))
-                        {
-                            throw new Exception("Unexpected File Type");
-                        }
-
-                        Console.WriteLine($"[{i + 1}/{filesCount}]");
-                        Console.WriteLine($"\tFilename: {af.FileName}");
-                        Console.WriteLine($"\tCompressed: {af.IsCompressed}");
-                        Console.WriteLine($"\tSize: {af.RawFileSize}");
-                        Console.WriteLine($"\tCompressed Size: {af.CompressedFileSize}");
-                        Console.WriteLine($"\tOffset: {af.Offset}");
-                        Console.WriteLine($"\tType: {af.Type}");
-                        Console.WriteLine($"\tName Checksum: {af.NameChecksum.ToString("x8")}");
-                        Console.WriteLine($"\tData Checksum: {af.DataChecksum.ToString("x8")}");
-                        Console.WriteLine();
-
-                        header.ArchivedFiles.Add(af);
-                    }
-
-                    // Order by offset to improve read performance
-                    header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.Offset).ToList();
-
-                    Console.WriteLine();
-                    Console.WriteLine("[DATA]");
-                    Console.Write("Checking Data Checksum...");
-
-                    foreach (YPFEntry af in header.ArchivedFiles)
-                    {
-                        fs.Position = af.Offset;
-
-                        using (MemoryStream ms = new MemoryStream(af.CompressedFileSize))
-                        {
-                            Util.CopyStream(fs, ms, af.CompressedFileSize);
-
-                            ms.Position = 0;
-
-                            UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(ms, (Int32)ms.Length);
-
-                            if (af.DataChecksum != calculatedDataChecksum)
-                            {
-                                throw new Exception("Invalid Data Checksum");
-                            }
-
-                            ms.Position = 0;
-
-                            if (af.IsCompressed)
-                            {
-                                using (MemoryStream decompressedFileStream = new MemoryStream(af.RawFileSize))
-                                {
-                                    using (GZipStream decompressionStream = new GZipStream(ms, CompressionMode.Decompress))
-                                    {
-                                        decompressionStream.CopyTo(decompressedFileStream);
-                                    }
-
-                                    if (decompressedFileStream.Length != af.RawFileSize)
-                                    {
-                                        throw new Exception("Invalid Decompressed File Size");
-                                    }
-
-                                }
-                            }
-                        }
-                    }
-
-                    Console.WriteLine(" Complete");
                 }
+
+                // Order by offset to improve read performance
+                header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.Offset).ToList();
+
+                Console.WriteLine();
+                Console.WriteLine("[DATA]");
+                Console.Write("Checking Data Checksum...");
+
+                foreach (YPFEntry af in header.ArchivedFiles)
+                {
+                    fs.Position = af.Offset;
+
+                    header.ValidateDataChecksum(fs, af.CompressedFileSize, af.DataChecksum);
+                }
+
+                Console.WriteLine(" Complete");
             }
         }
 

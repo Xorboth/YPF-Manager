@@ -1,6 +1,8 @@
 ﻿using System;
-using System.Text;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 
 namespace Ypf_Manager
 {
@@ -30,7 +32,7 @@ namespace Ypf_Manager
 
                 SetLengthSwappingTable();
                 SetChecksum();
-                SetFileNameEncryptionKey();
+                AssumeFileNameEncryptionKey();
             }
         }
 
@@ -66,6 +68,40 @@ namespace Ypf_Manager
             Version = version;
         }
 
+        public YPFHeader(Stream s)
+        {
+            BinaryReader br = new BinaryReader(s);
+
+            ArchivedFiles = new List<YPFEntry>();
+
+            if (!Enumerable.SequenceEqual(Signature, br.ReadBytes(4)))
+            {
+                throw new Exception("Invalid Archive Signature");
+            }
+
+            Version = br.ReadInt32();
+            int filesCount = br.ReadInt32();
+            ArchivedFilesHeaderSize = br.ReadInt32();
+
+            br.BaseStream.Position += 16;
+
+            if (filesCount <= 0)
+            {
+                throw new Exception("Invalid Files Count");
+            }
+
+            if (ArchivedFilesHeaderSize <= 0)
+            {
+                throw new Exception("Invalid Archived Files Header Size");
+            }
+
+            ArchivedFiles.Capacity = filesCount;
+
+            for (int i = 0; i < filesCount; i++)
+            {
+                ArchivedFiles.Add(ReadNextEntry(br));
+            }
+        }
 
         //
         // Set length swapping table
@@ -104,10 +140,10 @@ namespace Ypf_Manager
 
 
         //
-        // Set filename xor encryption key
+        // Assume filename xor encryption key (since some versions may have multiple keys)
         //
 
-        public void SetFileNameEncryptionKey()
+        public void AssumeFileNameEncryptionKey()
         {
             if (Version == 290)
             {
@@ -121,6 +157,71 @@ namespace Ypf_Manager
             {
                 FileNameEncryptionKey = 0x00;
             }
+        }
+
+        public void ValidateDataChecksum(Stream inputStream, Int32 length, UInt32 checksum)
+        {
+            UInt32 calculatedDataChecksum = DataChecksum.ComputeHash(inputStream, length);
+
+            if (checksum != calculatedDataChecksum)
+            {
+                throw new Exception("Invalid Data Checksum");
+            }
+
+            inputStream.Position = 0;
+        }
+
+        public void ValidateNameChecksum(Byte[] inputArray, UInt32 checksum)
+        {
+            UInt32 calculatedNameChecksum = NameChecksum.ComputeHash(inputArray);
+
+            if (calculatedNameChecksum != checksum)
+            {
+                throw new Exception("Invalid Name Checksum");
+            }
+        }
+
+        public YPFEntry ReadNextEntry(BinaryReader br)
+        {
+            YPFEntry af = new YPFEntry();
+
+            af.NameChecksum = br.ReadUInt32();
+
+            Byte fileNameLengthEncoded = Util.OneComplement(br.ReadByte());
+            Byte fileNameLengthDecoded = LengthSwappingTable[fileNameLengthEncoded];
+
+            Byte[] fileNameEncoded = br.ReadBytes(fileNameLengthDecoded);
+
+            for (int j = 0; j < fileNameLengthDecoded; j++)
+            {
+                fileNameEncoded[j] = (byte)(Util.OneComplement(fileNameEncoded[j]) ^ FileNameEncryptionKey);
+            }
+
+            af.FileName = Encoding.GetString(fileNameEncoded);
+            af.Type = (YPFEntry.FileType)br.ReadByte();
+            af.IsCompressed = (br.ReadByte() == 1);
+            af.RawFileSize = br.ReadInt32();
+            af.CompressedFileSize = br.ReadInt32();
+
+            if (Version < 479)
+            {
+                af.Offset = br.ReadInt32();
+            }
+            else
+            {
+                af.Offset = br.ReadInt64();
+            }
+
+            af.DataChecksum = br.ReadUInt32();
+
+            ValidateNameChecksum(fileNameEncoded, af.NameChecksum);
+
+            if (!Enum.IsDefined(typeof(YPFEntry.FileType), af.Type))
+            {
+                throw new Exception("Unexpected File Type");
+            }
+
+            return af;
         }
 
     }
