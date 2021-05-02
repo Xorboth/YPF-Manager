@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using Ionic.Zlib;
 
 namespace Ypf_Manager
 {
@@ -47,7 +48,7 @@ namespace Ypf_Manager
         {
             MemoryStream decompressedFileStream = new MemoryStream(decompressedSize);
 
-            using (var decompressionStream = new Ionic.Zlib.ZlibStream(inputStream, Ionic.Zlib.CompressionMode.Decompress, true))
+            using (ZlibStream decompressionStream = new ZlibStream(inputStream, Ionic.Zlib.CompressionMode.Decompress, true))
             {
                 decompressionStream.CopyTo(decompressedFileStream);
             }
@@ -71,7 +72,7 @@ namespace Ypf_Manager
         {
             MemoryStream compressedFileStream = new MemoryStream();
 
-            using (var compressionStream = new Ionic.Zlib.ZlibStream(compressedFileStream, Ionic.Zlib.CompressionMode.Compress, Ionic.Zlib.CompressionLevel.Level9, true))
+            using (ZlibStream compressionStream = new ZlibStream(compressedFileStream, Ionic.Zlib.CompressionMode.Compress, Ionic.Zlib.CompressionLevel.Level9, true))
             {
                 CopyStream(inputStream, compressionStream, inputStream.Length);
             }

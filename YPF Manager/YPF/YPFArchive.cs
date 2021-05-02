@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 
 namespace Ypf_Manager
@@ -28,16 +28,16 @@ namespace Ypf_Manager
 
             header.ArchivedFilesHeaderSize = 32;
 
-            foreach (String s in filesToProcess)
+            foreach (String file in filesToProcess)
             {
                 YPFEntry entry = new YPFEntry();
 
-                String fileName = s.Substring(inputFolder.Length + 1);
+                String fileName = file.Substring(inputFolder.Length + 1);
                 String fileExtension = Path.GetExtension(fileName).Substring(1);
 
                 entry.Type = Enum.IsDefined(typeof(YPFEntry.FileType), fileExtension) ? (YPFEntry.FileType)Enum.Parse(typeof(YPFEntry.FileType), fileExtension, true) : YPFEntry.FileType.text;
 
-                if (fileName.EndsWith(".ycg"))
+                if (fileExtension == "ycg")
                 {
                     fileName = fileName.Substring(0, fileName.Length - 4);
                 }
@@ -55,13 +55,13 @@ namespace Ypf_Manager
             header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.NameChecksum).ToList();
 
             using (FileStream outputFileStream = new FileStream(outputFile, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.SequentialScan))
-            using (BinaryWriter bw = new BinaryWriter(outputFileStream))
+            using (BinaryWriter outputBinaryWriter = new BinaryWriter(outputFileStream))
             {
                 outputFileStream.Position = header.ArchivedFilesHeaderSize;
 
-                for (int j = 0; j < header.ArchivedFiles.Count; j++)
+                for (int i = 0; i < header.ArchivedFiles.Count; i++)
                 {
-                    YPFEntry entry = header.ArchivedFiles[j];
+                    YPFEntry entry = header.ArchivedFiles[i];
 
                     Console.WriteLine($"Adding {entry.FileName}");
 
@@ -81,8 +81,8 @@ namespace Ypf_Manager
 
                         rawFileStream.Position = 0;
 
-                        header.ArchivedFiles[j].Offset = outputFileStream.Position;
-                        header.ArchivedFiles[j].RawFileSize = (Int32)rawFileStream.Length;
+                        header.ArchivedFiles[i].Offset = outputFileStream.Position;
+                        header.ArchivedFiles[i].RawFileSize = (Int32)rawFileStream.Length;
 
                         using (MemoryStream compressedFileStream = Util.CompressStream(rawFileStream))
                         {
@@ -94,11 +94,11 @@ namespace Ypf_Manager
 
                                 UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(compressedFileStream, (Int32)compressedFileStream.Length);
 
-                                YPFEntry checkDuplicate = header.ArchivedFiles.FirstOrDefault(x => x.DataChecksum == calculatedDataChecksum);
+                                YPFEntry duplicatedEntry = FindDuplicateEntry(header.ArchivedFiles, calculatedDataChecksum, (Int32)rawFileStream.Length);
 
-                                if (checkDuplicate != null)
+                                if (duplicatedEntry != null)
                                 {
-                                    header.ArchivedFiles[j].Offset = checkDuplicate.Offset;
+                                    header.ArchivedFiles[i].Offset = duplicatedEntry.Offset;
                                 }
                                 else
                                 {
@@ -107,9 +107,9 @@ namespace Ypf_Manager
                                     Util.CopyStream(compressedFileStream, outputFileStream, compressedFileStream.Length);
                                 }
 
-                                header.ArchivedFiles[j].CompressedFileSize = (Int32)compressedFileStream.Length;
-                                header.ArchivedFiles[j].IsCompressed = true;
-                                header.ArchivedFiles[j].DataChecksum = calculatedDataChecksum;
+                                header.ArchivedFiles[i].CompressedFileSize = (Int32)compressedFileStream.Length;
+                                header.ArchivedFiles[i].IsCompressed = true;
+                                header.ArchivedFiles[i].DataChecksum = calculatedDataChecksum;
                             }
                             else
                             {
@@ -117,11 +117,11 @@ namespace Ypf_Manager
 
                                 UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(rawFileStream, (Int32)rawFileStream.Length);
 
-                                YPFEntry checkDuplicate = header.ArchivedFiles.FirstOrDefault(x => x.DataChecksum == calculatedDataChecksum);
+                                YPFEntry duplicatedEntry = FindDuplicateEntry(header.ArchivedFiles, calculatedDataChecksum, (Int32)rawFileStream.Length);
 
-                                if (checkDuplicate != null)
+                                if (duplicatedEntry != null)
                                 {
-                                    header.ArchivedFiles[j].Offset = checkDuplicate.Offset;
+                                    header.ArchivedFiles[i].Offset = duplicatedEntry.Offset;
                                 }
                                 else
                                 {
@@ -130,9 +130,9 @@ namespace Ypf_Manager
                                     Util.CopyStream(rawFileStream, outputFileStream, rawFileStream.Length);
                                 }
 
-                                header.ArchivedFiles[j].CompressedFileSize = (Int32)rawFileStream.Length;
-                                header.ArchivedFiles[j].IsCompressed = false;
-                                header.ArchivedFiles[j].DataChecksum = calculatedDataChecksum;
+                                header.ArchivedFiles[i].CompressedFileSize = (Int32)rawFileStream.Length;
+                                header.ArchivedFiles[i].IsCompressed = false;
+                                header.ArchivedFiles[i].DataChecksum = calculatedDataChecksum;
                             }
                         }
 
@@ -148,16 +148,16 @@ namespace Ypf_Manager
 
                 outputFileStream.Position = 0;
 
-                bw.Write(header.Signature);
-                bw.Write(header.Version);
-                bw.Write(header.ArchivedFiles.Count);
-                bw.Write(header.ArchivedFilesHeaderSize);
+                outputBinaryWriter.Write(header.Signature);
+                outputBinaryWriter.Write(header.Version);
+                outputBinaryWriter.Write(header.ArchivedFiles.Count);
+                outputBinaryWriter.Write(header.ArchivedFilesHeaderSize);
 
                 outputFileStream.Position += 16;
 
                 foreach (YPFEntry entry in header.ArchivedFiles)
                 {
-                    bw.Write(entry.NameChecksum);
+                    outputBinaryWriter.Write(entry.NameChecksum);
 
                     Byte[] encodedName = header.Encoding.GetBytes(entry.FileName);
 
@@ -168,29 +168,29 @@ namespace Ypf_Manager
 
                     byte lengthEncoded = Util.OneComplement((byte)header.LengthSwappingTable.ToList().IndexOf((byte)encodedName.Length));
 
-                    bw.Write(lengthEncoded);
+                    outputBinaryWriter.Write(lengthEncoded);
 
-                    for (int j = 0; j < encodedName.Length; j++)
+                    for (int i = 0; i < encodedName.Length; i++)
                     {
-                        encodedName[j] = Util.OneComplement((byte)(encodedName[j] ^ header.FileNameEncryptionKey));
+                        encodedName[i] = Util.OneComplement((byte)(encodedName[i] ^ header.FileNameEncryptionKey));
                     }
 
-                    bw.Write(encodedName);
-                    bw.Write((byte)entry.Type);
-                    bw.Write(entry.IsCompressed);
-                    bw.Write(entry.RawFileSize);
-                    bw.Write(entry.CompressedFileSize);
+                    outputBinaryWriter.Write(encodedName);
+                    outputBinaryWriter.Write((byte)entry.Type);
+                    outputBinaryWriter.Write(entry.IsCompressed);
+                    outputBinaryWriter.Write(entry.RawFileSize);
+                    outputBinaryWriter.Write(entry.CompressedFileSize);
 
                     if (header.Version < 479)
                     {
-                        bw.Write((Int32)entry.Offset);
+                        outputBinaryWriter.Write((Int32)entry.Offset);
                     }
                     else
                     {
-                        bw.Write(entry.Offset);
+                        outputBinaryWriter.Write(entry.Offset);
                     }
 
-                    bw.Write(entry.DataChecksum);
+                    outputBinaryWriter.Write(entry.DataChecksum);
                 }
 
                 if (outputFileStream.Position != header.ArchivedFilesHeaderSize)
@@ -200,6 +200,15 @@ namespace Ypf_Manager
             }
         }
 
+
+        //
+        // Find a duplicate file entry with the same checksum and size
+        //
+
+        private static YPFEntry FindDuplicateEntry(List<YPFEntry> archivedFiles, UInt32 fileChecksum, Int32 fileSize)
+        {
+            return archivedFiles.FirstOrDefault(x => x.DataChecksum == fileChecksum && x.RawFileSize == fileSize);
+        }
 
         //
         // Extract an archive to the specified folder
@@ -212,9 +221,9 @@ namespace Ypf_Manager
             Console.WriteLine($"Folder: {outputFolder}");
             Console.WriteLine();
 
-            using (FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.SequentialScan))
+            using (FileStream inputFileStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.SequentialScan))
             {
-                YPFHeader header = new YPFHeader(fs);
+                YPFHeader header = new YPFHeader(inputFileStream);
 
                 // Order by offset to improve read performance
                 header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.Offset).ToList();
@@ -228,11 +237,11 @@ namespace Ypf_Manager
                     String customExtension = (entry.Type == YPFEntry.FileType.ycg ? ".ycg" : "");
                     String outputFileName = $@"{outputFolder}\{entry.FileName}{customExtension}";
 
-                    fs.Position = entry.Offset;
+                    inputFileStream.Position = entry.Offset;
 
                     using (MemoryStream ms = new MemoryStream(entry.CompressedFileSize))
                     {
-                        Util.CopyStream(fs, ms, entry.CompressedFileSize);
+                        Util.CopyStream(inputFileStream, ms, entry.CompressedFileSize);
 
                         ms.Position = 0;
 
@@ -240,18 +249,18 @@ namespace Ypf_Manager
 
                         Directory.CreateDirectory(Path.GetDirectoryName(outputFileName));
 
-                        using (FileStream fs1 = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.None))
+                        using (FileStream outputFileStream = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.None))
                         {
                             if (entry.IsCompressed)
                             {
                                 using (MemoryStream decompressedFileStream = Util.DecompressStream(ms, entry.RawFileSize))
                                 {
-                                    Util.CopyStream(decompressedFileStream, fs1, entry.RawFileSize);
+                                    Util.CopyStream(decompressedFileStream, outputFileStream, entry.RawFileSize);
                                 }
                             }
                             else
                             {
-                                Util.CopyStream(ms, fs1, entry.RawFileSize);
+                                Util.CopyStream(ms, outputFileStream, entry.RawFileSize);
                             }
                         }
                     }
@@ -264,15 +273,15 @@ namespace Ypf_Manager
         // Print the info of a specified archive
         //
 
-        public static void PrintInfo(String inputFile)
+        public static void PrintInfo(String inputFile, Boolean validateDataChecksum = true)
         {
             Console.WriteLine("[*PRINT INFO*]");
             Console.WriteLine($"File: {inputFile}");
             Console.WriteLine();
 
-            using (FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.SequentialScan))
+            using (FileStream inputFileStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.SequentialScan))
             {
-                YPFHeader header = new YPFHeader(fs);
+                YPFHeader header = new YPFHeader(inputFileStream);
 
                 Console.WriteLine("[HEADER]");
                 Console.WriteLine($"Version: {header.Version}");
@@ -304,18 +313,21 @@ namespace Ypf_Manager
                 // Order by offset to improve read performance
                 header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.Offset).ToList();
 
-                Console.WriteLine();
-                Console.WriteLine("[DATA]");
-                Console.Write("Checking Data Checksum...");
-
-                foreach (YPFEntry af in header.ArchivedFiles)
+                if (validateDataChecksum)
                 {
-                    fs.Position = af.Offset;
+                    Console.WriteLine();
+                    Console.WriteLine("[DATA]");
+                    Console.Write("Checking Data Checksum...");
 
-                    header.ValidateDataChecksum(fs, af.CompressedFileSize, af.DataChecksum);
+                    foreach (YPFEntry entry in header.ArchivedFiles)
+                    {
+                        inputFileStream.Position = entry.Offset;
+
+                        header.ValidateDataChecksum(inputFileStream, entry.CompressedFileSize, entry.DataChecksum);
+                    }
+
+                    Console.WriteLine(" Complete");
                 }
-
-                Console.WriteLine(" Complete");
             }
         }
 
