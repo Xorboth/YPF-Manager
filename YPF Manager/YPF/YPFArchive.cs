@@ -97,6 +97,12 @@ namespace Ypf_Manager
                                 throw new Exception("Max filesize reached for the current YPF version");
                             }
 
+                            // Check if the current file is empty
+                            if (inputFileStream.Length == 0)
+                            {
+                                throw new Exception("Empty files (0 Byte) are not supported");
+                            }
+
                             rawFileStream.Capacity = (Int32)inputFileStream.Length;
                             Util.CopyStream(inputFileStream, rawFileStream, inputFileStream.Length);
                         }
