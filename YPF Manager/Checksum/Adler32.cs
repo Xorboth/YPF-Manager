@@ -71,6 +71,22 @@ namespace Ypf_Manager
             UInt32 sum2 = (adler >> 16) & 0xffff;
             adler &= 0xffff;
 
+            // In case user likes doing a byte at a time, keep it fast
+            if (len == 1)
+            {
+                adler += data[0];
+                if (adler >= BASE)
+                    adler -= BASE;
+                sum2 += adler;
+                if (sum2 >= BASE)
+                    sum2 -= BASE;
+                return adler | (sum2 << 16);
+            }
+
+            // Initial Adler-32 value (deferred check for len == 1 speed)
+            if (len == 0)
+                return 1;
+                
             // In case short lengths are provided, keep it somewhat fast
             if (len < 16)
             {
