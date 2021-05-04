@@ -291,7 +291,7 @@ namespace Ypf_Manager
 
                 Console.WriteLine("[HEADER]");
                 Console.WriteLine($"Version: {header.Version}");
-                Console.WriteLine($"Files Count: {header.ArchivedFiles.Capacity}");
+                Console.WriteLine($"Files Count: {header.ArchivedFiles.Count}");
                 Console.WriteLine($"Header Size: {header.ArchivedFilesHeaderSize}");
                 Console.WriteLine($"Name Checksum Algorithm: {header.NameChecksum.Name}");
                 Console.WriteLine($"Data Checksum Algorithm: {header.DataChecksum.Name}");
@@ -304,7 +304,7 @@ namespace Ypf_Manager
                 {
                     YPFEntry entry = header.ArchivedFiles[i];
 
-                    Console.WriteLine($"[{i + 1}/{header.ArchivedFiles.Capacity}]");
+                    Console.WriteLine($"[{i + 1}/{header.ArchivedFiles.Count}]");
                     Console.WriteLine($"\tFilename: {entry.FileName}");
                     Console.WriteLine($"\tCompressed: {entry.IsCompressed}");
                     Console.WriteLine($"\tSize: {entry.RawFileSize}");
