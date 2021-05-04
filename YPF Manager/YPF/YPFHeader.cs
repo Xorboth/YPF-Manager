@@ -68,22 +68,22 @@ namespace Ypf_Manager
             Version = version;
         }
 
-        public YPFHeader(Stream s)
+        public YPFHeader(Stream inputStream)
         {
-            BinaryReader br = new BinaryReader(s);
+            BinaryReader inputBinaryReader = new BinaryReader(inputStream);
 
             ArchivedFiles = new List<YPFEntry>();
 
-            if (!Enumerable.SequenceEqual(Signature, br.ReadBytes(4)))
+            if (!Enumerable.SequenceEqual(Signature, inputBinaryReader.ReadBytes(4)))
             {
                 throw new Exception("Invalid Archive Signature");
             }
 
-            Version = br.ReadInt32();
-            int filesCount = br.ReadInt32();
-            ArchivedFilesHeaderSize = br.ReadInt32();
+            Version = inputBinaryReader.ReadInt32();
+            int filesCount = inputBinaryReader.ReadInt32();
+            ArchivedFilesHeaderSize = inputBinaryReader.ReadInt32();
 
-            br.BaseStream.Position += 16;
+            inputBinaryReader.BaseStream.Position += 16;
 
             if (filesCount <= 0)
             {
@@ -99,7 +99,7 @@ namespace Ypf_Manager
 
             for (int i = 0; i < filesCount; i++)
             {
-                ArchivedFiles.Add(ReadNextEntry(br));
+                ArchivedFiles.Add(ReadNextEntry(inputBinaryReader));
             }
         }
 
@@ -181,47 +181,57 @@ namespace Ypf_Manager
             }
         }
 
-        public YPFEntry ReadNextEntry(BinaryReader br)
+        public YPFEntry ReadNextEntry(BinaryReader inputBinaryReader)
         {
-            YPFEntry af = new YPFEntry();
+            YPFEntry entry = new YPFEntry();
 
-            af.NameChecksum = br.ReadUInt32();
+            entry.NameChecksum = inputBinaryReader.ReadUInt32();
 
-            Byte fileNameLengthEncoded = Util.OneComplement(br.ReadByte());
+            Byte fileNameLengthEncoded = Util.OneComplement(inputBinaryReader.ReadByte());
             Byte fileNameLengthDecoded = LengthSwappingTable[fileNameLengthEncoded];
 
-            Byte[] fileNameEncoded = br.ReadBytes(fileNameLengthDecoded);
+            Byte[] fileNameEncoded = inputBinaryReader.ReadBytes(fileNameLengthDecoded);
 
             for (int j = 0; j < fileNameLengthDecoded; j++)
             {
                 fileNameEncoded[j] = (byte)(Util.OneComplement(fileNameEncoded[j]) ^ FileNameEncryptionKey);
             }
 
-            af.FileName = Encoding.GetString(fileNameEncoded);
-            af.Type = (YPFEntry.FileType)br.ReadByte();
-            af.IsCompressed = (br.ReadByte() == 1);
-            af.RawFileSize = br.ReadInt32();
-            af.CompressedFileSize = br.ReadInt32();
+            entry.FileName = Encoding.GetString(fileNameEncoded);
+            entry.Type = (YPFEntry.FileType)inputBinaryReader.ReadByte();
+            entry.IsCompressed = (inputBinaryReader.ReadByte() == 1);
+            entry.RawFileSize = inputBinaryReader.ReadInt32();
+            entry.CompressedFileSize = inputBinaryReader.ReadInt32();
 
             if (Version < 479)
             {
-                af.Offset = br.ReadInt32();
+                entry.Offset = inputBinaryReader.ReadInt32();
             }
             else
             {
-                af.Offset = br.ReadInt64();
+                entry.Offset = inputBinaryReader.ReadInt64();
             }
 
-            af.DataChecksum = br.ReadUInt32();
+            entry.DataChecksum = inputBinaryReader.ReadUInt32();
 
-            ValidateNameChecksum(fileNameEncoded, af.NameChecksum);
+            ValidateNameChecksum(fileNameEncoded, entry.NameChecksum);
 
-            if (!Enum.IsDefined(typeof(YPFEntry.FileType), af.Type))
+            if (!Enum.IsDefined(typeof(YPFEntry.FileType), entry.Type))
             {
                 throw new Exception("Unexpected File Type");
             }
 
-            return af;
+            return entry;
+        }
+
+
+        //
+        // Find a duplicate file entry with the same checksum and size
+        //
+
+        public YPFEntry FindDuplicateEntry(UInt32 fileChecksum, Int32 fileSize)
+        {
+            return ArchivedFiles.FirstOrDefault(x => x.DataChecksum == fileChecksum && x.RawFileSize == fileSize);
         }
 
     }

@@ -35,17 +35,39 @@ namespace Ypf_Manager
                 String fileName = file.Substring(inputFolder.Length + 1);
                 String fileExtension = Path.GetExtension(fileName).Substring(1);
 
-                entry.Type = Enum.IsDefined(typeof(YPFEntry.FileType), fileExtension) ? (YPFEntry.FileType)Enum.Parse(typeof(YPFEntry.FileType), fileExtension, true) : YPFEntry.FileType.text;
-
+                // Remove YCG extension from the filename
                 if (fileExtension == "ycg")
                 {
                     fileName = fileName.Substring(0, fileName.Length - 4);
+                }
+
+                // Detect null filename
+                // This can happen when using YCG files
+                // e.g. fileName = ".ycg"
+                if (!(fileName.Length > 0))
+                {
+                    throw new Exception("Filename can't be null");
+                }
+
+                // Detect duplicated filenames (O(n^2))
+                // This can happen when using YCG and PNG files together
+                // e.g. fileName1 = "test1.png"
+                //      fileName2 = "test1.png.ycg"
+                //
+                //      since ".ycg" will be trimmed from the end, the two files will have the same name:
+                //
+                //      fileName1 = "test1.png" (PNG)
+                //      fileName2 = "test1.png" (YCG)
+                if (header.ArchivedFiles.FirstOrDefault(x => x.FileName == fileName) != null)
+                {
+                    throw new Exception("Filenames must be unique");
                 }
 
                 Byte[] encodedName = header.Encoding.GetBytes(fileName);
 
                 entry.FileName = fileName;
                 entry.NameChecksum = header.NameChecksum.ComputeHash(encodedName);
+                entry.Type = Enum.IsDefined(typeof(YPFEntry.FileType), fileExtension) ? (YPFEntry.FileType)Enum.Parse(typeof(YPFEntry.FileType), fileExtension, true) : YPFEntry.FileType.text;
 
                 header.ArchivedFilesHeaderSize += 23 + encodedName.Length + (header.Version >= 479 ? 4 : 0);
 
@@ -86,7 +108,6 @@ namespace Ypf_Manager
 
                         using (MemoryStream compressedFileStream = Util.CompressStream(rawFileStream))
                         {
-
                             // Check if the compressed file is smaller than the original one
                             if (compressedFileStream.Length < rawFileStream.Length)
                             {
@@ -94,7 +115,7 @@ namespace Ypf_Manager
 
                                 UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(compressedFileStream, (Int32)compressedFileStream.Length);
 
-                                YPFEntry duplicatedEntry = FindDuplicateEntry(header.ArchivedFiles, calculatedDataChecksum, (Int32)rawFileStream.Length);
+                                YPFEntry duplicatedEntry = header.FindDuplicateEntry(calculatedDataChecksum, (Int32)rawFileStream.Length);
 
                                 if (duplicatedEntry != null)
                                 {
@@ -117,7 +138,7 @@ namespace Ypf_Manager
 
                                 UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(rawFileStream, (Int32)rawFileStream.Length);
 
-                                YPFEntry duplicatedEntry = FindDuplicateEntry(header.ArchivedFiles, calculatedDataChecksum, (Int32)rawFileStream.Length);
+                                YPFEntry duplicatedEntry = header.FindDuplicateEntry(calculatedDataChecksum, (Int32)rawFileStream.Length);
 
                                 if (duplicatedEntry != null)
                                 {
@@ -200,15 +221,6 @@ namespace Ypf_Manager
             }
         }
 
-
-        //
-        // Find a duplicate file entry with the same checksum and size
-        //
-
-        private static YPFEntry FindDuplicateEntry(List<YPFEntry> archivedFiles, UInt32 fileChecksum, Int32 fileSize)
-        {
-            return archivedFiles.FirstOrDefault(x => x.DataChecksum == fileChecksum && x.RawFileSize == fileSize);
-        }
 
         //
         // Extract an archive to the specified folder
