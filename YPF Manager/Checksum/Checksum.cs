@@ -7,23 +7,21 @@ namespace Ypf_Manager
     {
 
         //
-        // Variables
+        // Variable(s)
         //
 
         public abstract String Name { get; }
 
 
         //
-        // Compute byte array hash with implemented algorithm
+        // Function(s)
         //
 
+        // Compute byte array hash with implemented algorithm
         public abstract UInt32 ComputeHash(Byte[] inputBytes);
 
 
-        //
         // Compute stream hash with implemented algorithm
-        //
-
         public UInt32 ComputeHash(Stream inputStream, int length)
         {
             Byte[] buffer = new Byte[length];

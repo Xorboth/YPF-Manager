@@ -5,6 +5,11 @@ namespace Ypf_Manager
 {
     class Program
     {
+
+        //
+        // Function(s)
+        //
+
         static void Main(string[] args)
         {
             // Set variables
@@ -89,5 +94,6 @@ namespace Ypf_Manager
                 Console.ReadLine();
             }
         }
+
     }
 }

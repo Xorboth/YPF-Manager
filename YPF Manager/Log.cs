@@ -8,14 +8,14 @@ namespace Ypf_Manager
     {
 
         //
-        // Variables
+        // Variable(s)
         //
 
         private readonly StringBuilder sb;
 
 
         //
-        // Constructor
+        // Constructor(s)
         //
 
         public Log()
@@ -25,9 +25,10 @@ namespace Ypf_Manager
 
 
         //
-        // Add a new message to the log
+        // Function(s)
         //
 
+        // Add a new message to the log
         public void Add(String message)
         {
             sb.Append(DateTime.Now.ToString("[yyyy/MM/dd HH:mm:ss] "));
@@ -36,10 +37,7 @@ namespace Ypf_Manager
         }
 
 
-        //
         // Save the log into a file
-        //
-
         public void Save()
         {
             String outputFile = $@"{Config.ExecutableLocation()}\log.txt";

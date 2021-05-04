@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using Ionic.Zlib;
 
@@ -8,19 +8,17 @@ namespace Ypf_Manager
     {
 
         //
-        // Returns the one complement of a given byte
+        // Function(s)
         //
 
+        // Returns the one complement of a given byte
         public static Byte OneComplement(Byte i)
         {
             return (Byte)~i;
         }
 
 
-        //
         // Copy data from input stream to ouput stream
-        //
-
         public static void CopyStream(Stream inputStream, Stream outputStream, Int64 length)
         {
             Int32 bufferSize = 4096;
@@ -40,10 +38,7 @@ namespace Ypf_Manager
         }
 
 
-        //
         // Decompress from input stream to memory stream
-        //
-
         public static MemoryStream DecompressStream(Stream inputStream, int decompressedSize)
         {
             MemoryStream decompressedFileStream = new MemoryStream(decompressedSize);
@@ -64,10 +59,7 @@ namespace Ypf_Manager
         }
 
 
-        //
         // Compress from input stream to memory stream
-        //
-
         public static MemoryStream CompressStream(Stream inputStream)
         {
             MemoryStream compressedFileStream = new MemoryStream();

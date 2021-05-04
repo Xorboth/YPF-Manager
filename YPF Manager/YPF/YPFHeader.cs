@@ -10,7 +10,7 @@ namespace Ypf_Manager
     {
 
         //
-        // Variables
+        // Variable(s)
         //
 
         // YPF\0
@@ -53,7 +53,7 @@ namespace Ypf_Manager
 
 
         //
-        // Constructor
+        // Constructor(s)
         //
 
         public YPFHeader()
@@ -103,10 +103,12 @@ namespace Ypf_Manager
             }
         }
 
+
         //
-        // Set length swapping table
+        // Function(s)
         //
 
+        // Set length swapping table
         public void SetLengthSwappingTable()
         {
             if (Version >= 500)
@@ -120,10 +122,7 @@ namespace Ypf_Manager
         }
 
 
-        //
         // Set the checksum algorithms
-        //
-
         public void SetChecksum()
         {
             if (Version < 479)
@@ -139,10 +138,7 @@ namespace Ypf_Manager
         }
 
 
-        //
         // Assume filename xor encryption key (since some versions may have multiple keys)
-        //
-
         public void AssumeFileNameEncryptionKey()
         {
             if (Version == 290)
@@ -159,6 +155,8 @@ namespace Ypf_Manager
             }
         }
 
+
+        // Check if data matches the providen checksum
         public void ValidateDataChecksum(Stream inputStream, Int32 length, UInt32 checksum)
         {
             UInt32 calculatedDataChecksum = DataChecksum.ComputeHash(inputStream, length);
@@ -171,6 +169,8 @@ namespace Ypf_Manager
             inputStream.Position = 0;
         }
 
+
+        // Check if name matches the providen checksum
         public void ValidateNameChecksum(Byte[] inputArray, UInt32 checksum)
         {
             UInt32 calculatedNameChecksum = NameChecksum.ComputeHash(inputArray);
@@ -181,6 +181,8 @@ namespace Ypf_Manager
             }
         }
 
+
+        // Read the next entry from the provided file
         public YPFEntry ReadNextEntry(BinaryReader inputBinaryReader)
         {
             YPFEntry entry = new YPFEntry();
@@ -225,10 +227,7 @@ namespace Ypf_Manager
         }
 
 
-        //
         // Find a duplicate file entry with the same checksum and size
-        //
-
         public YPFEntry FindDuplicateEntry(UInt32 fileChecksum, Int32 fileSize)
         {
             return ArchivedFiles.FirstOrDefault(x => x.DataChecksum == fileChecksum && x.RawFileSize == fileSize);

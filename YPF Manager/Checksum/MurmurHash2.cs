@@ -20,16 +20,17 @@ namespace Ypf_Manager
     {
 
         //
-        // Variables
+        // Variable(s)
         //
 
         public override string Name => "MurmurHash2";
 
 
         //
-        // Compute byte array hash with MurmurHash2 algorithm
+        // Function(s)
         //
 
+        // Compute byte array hash with MurmurHash2 algorithm
         public override UInt32 ComputeHash(byte[] data)
         {
             //
@@ -49,10 +50,8 @@ namespace Ypf_Manager
             const UInt32 m = 0x5bd1e995;
             const Int32 r = 24;
 
-
             // Initialize the hash to a 'random' value
             UInt32 h = seed ^ (UInt32)len;
-
 
             // Mix 4 bytes at a time into the hash
             Int32 dataIndex = 0;
@@ -71,7 +70,6 @@ namespace Ypf_Manager
                 dataIndex += 4;
                 len -= 4;
             }
-
 
             // Handle the last few bytes of the input array
             if (len == 3)

@@ -8,7 +8,7 @@ namespace Ypf_Manager
     {
 
         //
-        // Enums
+        // Enum(s)
         //
 
         public enum OperationMode
@@ -21,7 +21,7 @@ namespace Ypf_Manager
 
 
         //
-        // Variables
+        // Variable(s)
         //
 
         public static String ExecutableLocation()
@@ -40,7 +40,7 @@ namespace Ypf_Manager
 
 
         //
-        // Constructor
+        // Constructor(s)
         //
 
         public Config()
@@ -61,9 +61,10 @@ namespace Ypf_Manager
 
 
         //
-        // Scan args to set options
+        // Function(s)
         //
 
+        // Scan args to set options
         public void Set(String[] args)
         {
             //

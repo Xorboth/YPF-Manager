@@ -9,7 +9,7 @@ namespace Ypf_Manager
     {
 
         //
-        // Variables
+        // Variable(s)
         //
 
         public override string Name => "CRC32";
@@ -52,9 +52,10 @@ namespace Ypf_Manager
 
 
         //
-        // Compute byte array hash with CRC-32 algorithm
+        // Function(s)
         //
 
+        // Compute byte array hash with CRC-32 algorithm
         public override UInt32 ComputeHash(byte[] data)
         {
             // Initialize CRC-32 to starting value
@@ -69,6 +70,6 @@ namespace Ypf_Manager
             // Finalize the CRC-32 value by inverting all the bits
             return ~crc32;
         }
-    }
 
+    }
 }

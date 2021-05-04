@@ -37,7 +37,7 @@ namespace Ypf_Manager
     {
 
         //
-        // Variables
+        // Variable(s)
         //
 
         public override string Name => "Adler32";
@@ -49,9 +49,10 @@ namespace Ypf_Manager
 
 
         //
-        // Compute byte array hash with Adler32 algorithm
+        // Function(s)
         //
 
+        // Compute byte array hash with Adler32 algorithm
         public override UInt32 ComputeHash(byte[] data)
         {
             //
@@ -67,7 +68,7 @@ namespace Ypf_Manager
             // Adler32 compute hash
             //
 
-            // Split Adler-32 into component sums */
+            // Split Adler-32 into component sums
             UInt32 sum2 = (adler >> 16) & 0xffff;
             adler &= 0xffff;
 
@@ -86,7 +87,7 @@ namespace Ypf_Manager
             // Initial Adler-32 value (deferred check for len == 1 speed)
             if (len == 0)
                 return 1;
-                
+
             // In case short lengths are provided, keep it somewhat fast
             if (len < 16)
             {
@@ -180,5 +181,6 @@ namespace Ypf_Manager
             // Return recombined sums
             return adler | (sum2 << 16);
         }
+
     }
 }

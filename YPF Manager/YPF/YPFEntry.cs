@@ -6,7 +6,7 @@ namespace Ypf_Manager
     {
 
         //
-        // Enums
+        // Enum(s)
         //
 
         public enum FileType
@@ -25,7 +25,7 @@ namespace Ypf_Manager
 
 
         //
-        // Variables
+        // Variable(s)
         //
 
         public String FileName { get; set; }

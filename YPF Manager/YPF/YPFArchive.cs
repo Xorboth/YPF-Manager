@@ -9,9 +9,10 @@ namespace Ypf_Manager
     {
 
         //
-        // Create a new archive from a given folder
+        // Function(s)
         //
 
+        // Create a new archive from a given folder
         public static void Create(String inputFolder, String outputFile, Int32 version)
         {
             Console.WriteLine("[*COMPRESS*]");
@@ -222,10 +223,7 @@ namespace Ypf_Manager
         }
 
 
-        //
         // Extract an archive to the specified folder
-        //
-
         public static void Extract(String inputFile, String outputFolder)
         {
             Console.WriteLine("[*EXTRACT*]");
@@ -281,10 +279,7 @@ namespace Ypf_Manager
         }
 
 
-        //
         // Print the info of a specified archive
-        //
-
         public static void PrintInfo(String inputFile, Boolean validateDataChecksum = true)
         {
             Console.WriteLine("[*PRINT INFO*]");
