@@ -32,6 +32,8 @@ namespace Ypf_Manager
 
         public Boolean WaitForUserInputBeforeExit { get; set; }
 
+        public Boolean SkipDataCheckOnPrintInfo { get; set; }
+
         public Int32 EngineVersion { get; set; }
 
         public List<String> FilesToProcess { get; set; }
@@ -52,6 +54,8 @@ namespace Ypf_Manager
             Mode = OperationMode.Help;
 
             WaitForUserInputBeforeExit = false;
+
+            SkipDataCheckOnPrintInfo = false;
 
             EngineVersion = 0;
 
@@ -119,6 +123,11 @@ namespace Ypf_Manager
                 {
                     // Wait for user input before exit
                     WaitForUserInputBeforeExit = true;
+                }
+                else if (currentArg == "-sdc")
+                {
+                    // Skip data check
+                    SkipDataCheckOnPrintInfo = true;
                 }
                 else if (currentArg.EndsWith(".ypf") && File.Exists(currentArg))
                 {

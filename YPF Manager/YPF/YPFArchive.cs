@@ -285,7 +285,7 @@ namespace Ypf_Manager
 
 
         // Print the info of a specified archive
-        public static void PrintInfo(String inputFile, Boolean validateDataChecksum = true)
+        public static void PrintInfo(String inputFile, Boolean skipDataChecksum)
         {
             Console.WriteLine("[*PRINT INFO*]");
             Console.WriteLine($"File: {inputFile}");
@@ -325,7 +325,7 @@ namespace Ypf_Manager
                 // Order by offset to improve read performance
                 header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.Offset).ToList();
 
-                if (validateDataChecksum)
+                if (!skipDataChecksum)
                 {
                     Console.WriteLine();
                     Console.WriteLine("[DATA]");
