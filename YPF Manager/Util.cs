@@ -39,7 +39,7 @@ namespace Ypf_Manager
 
 
         // Decompress from input stream to memory stream
-        public static MemoryStream DecompressStream(Stream inputStream, int decompressedSize)
+        public static MemoryStream DecompressZlibStream(Stream inputStream, int decompressedSize)
         {
             MemoryStream decompressedFileStream = new MemoryStream(decompressedSize);
 
@@ -60,7 +60,7 @@ namespace Ypf_Manager
 
 
         // Compress from input stream to memory stream
-        public static MemoryStream CompressStream(Stream inputStream)
+        public static MemoryStream CompressZlibStream(Stream inputStream)
         {
             MemoryStream compressedFileStream = new MemoryStream();
 

@@ -26,8 +26,13 @@ namespace Ypf_Manager
 
             String[] filesToProcess = Directory.GetFiles(inputFolder, "*.*", SearchOption.AllDirectories);
 
+            // Set list capacity to improve performance
+            header.ArchivedFiles.Capacity = filesToProcess.Length;
+
+            // Skip the constant header section
             header.ArchivedFilesHeaderSize = 32;
 
+            // Process files to get their data and accurately calculate the header size
             foreach (String file in filesToProcess)
             {
                 YPFEntry entry = new YPFEntry();
@@ -69,27 +74,34 @@ namespace Ypf_Manager
                 entry.NameChecksum = header.NameChecksum.ComputeHash(encodedName);
                 entry.Type = Enum.IsDefined(typeof(YPFEntry.FileType), fileExtension) ? (YPFEntry.FileType)Enum.Parse(typeof(YPFEntry.FileType), fileExtension, true) : YPFEntry.FileType.text;
 
+                // Accurately calculate the entry header size
                 header.ArchivedFilesHeaderSize += 23 + encodedName.Length + (header.Version >= 479 ? 4 : 0);
 
                 header.ArchivedFiles.Add(entry);
             }
 
+            // Order list by Name Checksum as expected by the archive format
             header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.NameChecksum).ToList();
 
             using (FileStream outputFileStream = new FileStream(outputFile, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.SequentialScan))
             using (BinaryWriter outputBinaryWriter = new BinaryWriter(outputFileStream))
             {
+                // Skip header to directly write the files
                 outputFileStream.Position = header.ArchivedFilesHeaderSize;
 
+                // Read the files and write them to the archive
                 for (int i = 0; i < header.ArchivedFiles.Count; i++)
                 {
                     YPFEntry entry = header.ArchivedFiles[i];
 
                     Console.WriteLine($"Adding {entry.FileName}");
 
-                    using (MemoryStream rawFileStream = new MemoryStream())
+                    using (MemoryStream rawMemoryStream = new MemoryStream())
                     {
-                        using (FileStream inputFileStream = new FileStream($@"{inputFolder}\{entry.FileName}{(entry.Type == YPFEntry.FileType.ycg ? ".ycg" : "")}", FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.SequentialScan))
+                        String filePath = $@"{inputFolder}\{entry.FileName}{(entry.Type == YPFEntry.FileType.ycg ? ".ycg" : "")}";
+
+                        // Copy the FileStream to a MemoryStream to improve performance
+                        using (FileStream inputFileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.SequentialScan))
                         {
                             // Check if the current file saturated the 32 filesize bits
                             if (inputFileStream.Length > Int32.MaxValue)
@@ -103,25 +115,25 @@ namespace Ypf_Manager
                                 throw new Exception("Empty files (0 Byte) are not supported");
                             }
 
-                            rawFileStream.Capacity = (Int32)inputFileStream.Length;
-                            Util.CopyStream(inputFileStream, rawFileStream, inputFileStream.Length);
+                            rawMemoryStream.Capacity = (Int32)inputFileStream.Length;
+                            Util.CopyStream(inputFileStream, rawMemoryStream, inputFileStream.Length);
                         }
 
-                        rawFileStream.Position = 0;
+                        rawMemoryStream.Position = 0;
 
                         header.ArchivedFiles[i].Offset = outputFileStream.Position;
-                        header.ArchivedFiles[i].RawFileSize = (Int32)rawFileStream.Length;
+                        header.ArchivedFiles[i].RawFileSize = (Int32)rawMemoryStream.Length;
 
-                        using (MemoryStream compressedFileStream = Util.CompressStream(rawFileStream))
+                        using (MemoryStream compressedFileStream = Util.CompressZlibStream(rawMemoryStream))
                         {
                             // Check if the compressed file is smaller than the original one
-                            if (compressedFileStream.Length < rawFileStream.Length)
+                            if (compressedFileStream.Length < rawMemoryStream.Length)
                             {
                                 compressedFileStream.Position = 0;
 
                                 UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(compressedFileStream, (Int32)compressedFileStream.Length);
 
-                                YPFEntry duplicatedEntry = header.FindDuplicateEntry(calculatedDataChecksum, (Int32)rawFileStream.Length);
+                                YPFEntry duplicatedEntry = header.FindDuplicateEntry(calculatedDataChecksum, (Int32)rawMemoryStream.Length);
 
                                 if (duplicatedEntry != null)
                                 {
@@ -140,11 +152,11 @@ namespace Ypf_Manager
                             }
                             else
                             {
-                                rawFileStream.Position = 0;
+                                rawMemoryStream.Position = 0;
 
-                                UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(rawFileStream, (Int32)rawFileStream.Length);
+                                UInt32 calculatedDataChecksum = header.DataChecksum.ComputeHash(rawMemoryStream, (Int32)rawMemoryStream.Length);
 
-                                YPFEntry duplicatedEntry = header.FindDuplicateEntry(calculatedDataChecksum, (Int32)rawFileStream.Length);
+                                YPFEntry duplicatedEntry = header.FindDuplicateEntry(calculatedDataChecksum, (Int32)rawMemoryStream.Length);
 
                                 if (duplicatedEntry != null)
                                 {
@@ -152,12 +164,12 @@ namespace Ypf_Manager
                                 }
                                 else
                                 {
-                                    rawFileStream.Position = 0;
+                                    rawMemoryStream.Position = 0;
 
-                                    Util.CopyStream(rawFileStream, outputFileStream, rawFileStream.Length);
+                                    Util.CopyStream(rawMemoryStream, outputFileStream, rawMemoryStream.Length);
                                 }
 
-                                header.ArchivedFiles[i].CompressedFileSize = (Int32)rawFileStream.Length;
+                                header.ArchivedFiles[i].CompressedFileSize = (Int32)rawMemoryStream.Length;
                                 header.ArchivedFiles[i].IsCompressed = false;
                                 header.ArchivedFiles[i].DataChecksum = calculatedDataChecksum;
                             }
@@ -170,6 +182,11 @@ namespace Ypf_Manager
                         }
                     }
                 }
+
+
+                //
+                // Write the header since all the entry data is now known
+                //
 
                 Console.WriteLine($"Finalizing header");
 
@@ -268,7 +285,7 @@ namespace Ypf_Manager
                         {
                             if (entry.IsCompressed)
                             {
-                                using (MemoryStream decompressedFileStream = Util.DecompressStream(ms, entry.RawFileSize))
+                                using (MemoryStream decompressedFileStream = Util.DecompressZlibStream(ms, entry.RawFileSize))
                                 {
                                     Util.CopyStream(decompressedFileStream, outputFileStream, entry.RawFileSize);
                                 }
