@@ -45,8 +45,8 @@ namespace Ypf_Manager
             // MurmurHash2 compute hash
             //
 
-            // 'm' and 'r' are mixing constants generated offline.
-            // They're not really 'magic', they just happen to work well.
+            // 'm' and 'r' are mixing constants generated offline
+            // They're not really 'magic', they just happen to work well
             const UInt32 m = 0x5bd1e995;
             const Int32 r = 24;
 
@@ -91,7 +91,7 @@ namespace Ypf_Manager
                 h *= m;
             }
 
-            // Do a few final mixes of the hash to ensure the last few bytes are well-incorporated.
+            // Do a few final mixes of the hash to ensure the last few bytes are well-incorporated
             h ^= h >> 13;
             h *= m;
             h ^= h >> 15;

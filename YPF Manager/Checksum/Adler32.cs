@@ -118,24 +118,10 @@ namespace Ypf_Manager
                     // 16 sums unrolled
 
                     // DO16(buf);
-                    adler += data[dataIndex]; sum2 += adler;
-                    adler += data[dataIndex + 1]; sum2 += adler;
-                    adler += data[dataIndex + 2]; sum2 += adler;
-                    adler += data[dataIndex + 3]; sum2 += adler;
-                    adler += data[dataIndex + 4]; sum2 += adler;
-                    adler += data[dataIndex + 5]; sum2 += adler;
-                    adler += data[dataIndex + 6]; sum2 += adler;
-                    adler += data[dataIndex + 7]; sum2 += adler;
-                    adler += data[dataIndex + 8]; sum2 += adler;
-                    adler += data[dataIndex + 9]; sum2 += adler;
-                    adler += data[dataIndex + 10]; sum2 += adler;
-                    adler += data[dataIndex + 11]; sum2 += adler;
-                    adler += data[dataIndex + 12]; sum2 += adler;
-                    adler += data[dataIndex + 13]; sum2 += adler;
-                    adler += data[dataIndex + 14]; sum2 += adler;
-                    adler += data[dataIndex + 15]; sum2 += adler;
-
-                    dataIndex += 16;
+                    for (int i = 0; i < 16; i++)
+                    {
+                        adler += data[dataIndex++]; sum2 += adler;
+                    }
                 } while (0 != --n);
                 adler %= BASE;
                 sum2 %= BASE;
@@ -150,24 +136,10 @@ namespace Ypf_Manager
                     len -= 16;
 
                     //DO16(buf);
-                    adler += data[dataIndex]; sum2 += adler;
-                    adler += data[dataIndex + 1]; sum2 += adler;
-                    adler += data[dataIndex + 2]; sum2 += adler;
-                    adler += data[dataIndex + 3]; sum2 += adler;
-                    adler += data[dataIndex + 4]; sum2 += adler;
-                    adler += data[dataIndex + 5]; sum2 += adler;
-                    adler += data[dataIndex + 6]; sum2 += adler;
-                    adler += data[dataIndex + 7]; sum2 += adler;
-                    adler += data[dataIndex + 8]; sum2 += adler;
-                    adler += data[dataIndex + 9]; sum2 += adler;
-                    adler += data[dataIndex + 10]; sum2 += adler;
-                    adler += data[dataIndex + 11]; sum2 += adler;
-                    adler += data[dataIndex + 12]; sum2 += adler;
-                    adler += data[dataIndex + 13]; sum2 += adler;
-                    adler += data[dataIndex + 14]; sum2 += adler;
-                    adler += data[dataIndex + 15]; sum2 += adler;
-
-                    dataIndex += 16;
+                    for (int i = 0; i < 16; i++)
+                    {
+                        adler += data[dataIndex++]; sum2 += adler;
+                    }
                 }
                 while (0 != len--)
                 {

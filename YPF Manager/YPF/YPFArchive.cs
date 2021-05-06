@@ -257,7 +257,7 @@ namespace Ypf_Manager
             {
                 YPFHeader header = new YPFHeader(inputFileStream);
 
-                // Order by offset to improve read performance
+                // Order by offset to improve sequential read performance
                 header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.Offset).ToList();
 
                 for (int i = 0; i < header.ArchivedFiles.Count; i++)
@@ -271,13 +271,13 @@ namespace Ypf_Manager
 
                     inputFileStream.Position = entry.Offset;
 
-                    using (MemoryStream ms = new MemoryStream(entry.CompressedFileSize))
+                    using (MemoryStream entryMemoryStream = new MemoryStream(entry.CompressedFileSize))
                     {
-                        Util.CopyStream(inputFileStream, ms, entry.CompressedFileSize);
+                        Util.CopyStream(inputFileStream, entryMemoryStream, entry.CompressedFileSize);
 
-                        ms.Position = 0;
+                        entryMemoryStream.Position = 0;
 
-                        header.ValidateDataChecksum(ms, entry.CompressedFileSize, entry.DataChecksum);
+                        header.ValidateDataChecksum(entryMemoryStream, entry.CompressedFileSize, entry.DataChecksum);
 
                         Directory.CreateDirectory(Path.GetDirectoryName(outputFileName));
 
@@ -285,14 +285,14 @@ namespace Ypf_Manager
                         {
                             if (entry.IsCompressed)
                             {
-                                using (MemoryStream decompressedFileStream = Util.DecompressZlibStream(ms, entry.RawFileSize))
+                                using (MemoryStream decompressedEntryMemoryStream = Util.DecompressZlibStream(entryMemoryStream, entry.RawFileSize))
                                 {
-                                    Util.CopyStream(decompressedFileStream, outputFileStream, entry.RawFileSize);
+                                    Util.CopyStream(decompressedEntryMemoryStream, outputFileStream, entry.RawFileSize);
                                 }
                             }
                             else
                             {
-                                Util.CopyStream(ms, outputFileStream, entry.RawFileSize);
+                                Util.CopyStream(entryMemoryStream, outputFileStream, entry.RawFileSize);
                             }
                         }
                     }
@@ -312,6 +312,7 @@ namespace Ypf_Manager
             {
                 YPFHeader header = new YPFHeader(inputFileStream);
 
+                // Print header info
                 Console.WriteLine("[HEADER]");
                 Console.WriteLine($"Version: {header.Version}");
                 Console.WriteLine($"Files Count: {header.ArchivedFiles.Count}");
@@ -327,6 +328,7 @@ namespace Ypf_Manager
                 {
                     YPFEntry entry = header.ArchivedFiles[i];
 
+                    // Print entry info
                     Console.WriteLine($"[{i + 1}/{header.ArchivedFiles.Count}]");
                     Console.WriteLine($"\tFilename: {entry.FileName}");
                     Console.WriteLine($"\tCompressed: {entry.IsCompressed}");
@@ -339,11 +341,11 @@ namespace Ypf_Manager
                     Console.WriteLine();
                 }
 
-                // Order by offset to improve read performance
-                header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.Offset).ToList();
-
                 if (!skipDataChecksum)
                 {
+                    // Order by offset to improve sequential read performance
+                    header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.Offset).ToList();
+
                     Console.WriteLine();
                     Console.WriteLine("[DATA]");
                     Console.Write("Checking Data Checksum...");

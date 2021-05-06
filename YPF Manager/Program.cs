@@ -74,7 +74,6 @@ namespace Ypf_Manager
                         Console.WriteLine("\t-sdc\t\t\tSkip data checksum (Print info only)");
 
                         break;
-
                 }
             }
             catch (Exception ex)
