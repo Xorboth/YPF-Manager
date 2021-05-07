@@ -32,7 +32,7 @@ namespace Ypf_Manager
 
         public Boolean WaitForUserInputBeforeExit { get; set; }
 
-        public Boolean SkipDataCheckOnPrintInfo { get; set; }
+        public Boolean SkipDataIntegrityValidationOnPrintInfo { get; set; }
 
         public Int32 EngineVersion { get; set; }
 
@@ -55,7 +55,7 @@ namespace Ypf_Manager
 
             WaitForUserInputBeforeExit = false;
 
-            SkipDataCheckOnPrintInfo = false;
+            SkipDataIntegrityValidationOnPrintInfo = false;
 
             EngineVersion = 0;
 
@@ -127,7 +127,7 @@ namespace Ypf_Manager
                 else if (currentArg == "-sdc")
                 {
                     // Skip data check
-                    SkipDataCheckOnPrintInfo = true;
+                    SkipDataIntegrityValidationOnPrintInfo = true;
                 }
                 else if (currentArg.EndsWith(".ypf") && File.Exists(currentArg))
                 {

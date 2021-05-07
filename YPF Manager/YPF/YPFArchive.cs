@@ -255,6 +255,7 @@ namespace Ypf_Manager
 
             using (FileStream inputFileStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.SequentialScan))
             {
+                // Header data
                 YPFHeader header = new YPFHeader(inputFileStream);
 
                 // Order by offset to improve sequential read performance
@@ -262,47 +263,54 @@ namespace Ypf_Manager
 
                 for (int i = 0; i < header.ArchivedFiles.Count; i++)
                 {
+                    // Entry data
                     YPFEntry entry = header.ArchivedFiles[i];
 
                     Console.WriteLine($"[{i + 1}/{header.ArchivedFiles.Count}] Extracting {entry.FileName}");
 
+
+                    //
+                    // Copy file to MemoryStream to improve performance
+                    //
+
+                    MemoryStream entryMemoryStream = new MemoryStream(entry.CompressedFileSize);
+
+                    inputFileStream.Position = entry.Offset;
+                    Util.CopyStream(inputFileStream, entryMemoryStream, entry.CompressedFileSize);
+
+                    // Validate file checksum
+                    entryMemoryStream.Position = 0;
+                    header.ValidateDataIntegrity(entryMemoryStream, entry.CompressedFileSize, entry.DataChecksum);
+
+                    // Decompress file if needed
+                    if (entry.IsCompressed)
+                    {
+                        entryMemoryStream = Util.DecompressZlibStream(entryMemoryStream, entry.RawFileSize);
+                    }
+
+
+                    //
+                    // Write the file
+                    //
+
                     String customExtension = (entry.Type == YPFEntry.FileType.ycg ? ".ycg" : "");
                     String outputFileName = $@"{outputFolder}\{entry.FileName}{customExtension}";
 
-                    inputFileStream.Position = entry.Offset;
+                    Directory.CreateDirectory(Path.GetDirectoryName(outputFileName));
 
-                    using (MemoryStream entryMemoryStream = new MemoryStream(entry.CompressedFileSize))
+                    using (FileStream outputFileStream = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.None))
                     {
-                        Util.CopyStream(inputFileStream, entryMemoryStream, entry.CompressedFileSize);
-
-                        entryMemoryStream.Position = 0;
-
-                        header.ValidateDataChecksum(entryMemoryStream, entry.CompressedFileSize, entry.DataChecksum);
-
-                        Directory.CreateDirectory(Path.GetDirectoryName(outputFileName));
-
-                        using (FileStream outputFileStream = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.None))
-                        {
-                            if (entry.IsCompressed)
-                            {
-                                using (MemoryStream decompressedEntryMemoryStream = Util.DecompressZlibStream(entryMemoryStream, entry.RawFileSize))
-                                {
-                                    Util.CopyStream(decompressedEntryMemoryStream, outputFileStream, entry.RawFileSize);
-                                }
-                            }
-                            else
-                            {
-                                Util.CopyStream(entryMemoryStream, outputFileStream, entry.RawFileSize);
-                            }
-                        }
+                        Util.CopyStream(entryMemoryStream, outputFileStream, entry.RawFileSize);
                     }
+
+                    entryMemoryStream.Dispose();
                 }
             }
         }
 
 
         // Print the info of a specified archive
-        public static void PrintInfo(String inputFile, Boolean skipDataChecksum)
+        public static void PrintInfo(String inputFile, Boolean skipDataIntegrityValidation)
         {
             Console.WriteLine("[*PRINT INFO*]");
             Console.WriteLine($"File: {inputFile}");
@@ -310,6 +318,7 @@ namespace Ypf_Manager
 
             using (FileStream inputFileStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.SequentialScan))
             {
+                // Header data
                 YPFHeader header = new YPFHeader(inputFileStream);
 
                 // Print header info
@@ -326,6 +335,7 @@ namespace Ypf_Manager
 
                 for (int i = 0; i < header.ArchivedFiles.Count; i++)
                 {
+                    // Entry data
                     YPFEntry entry = header.ArchivedFiles[i];
 
                     // Print entry info
@@ -341,20 +351,22 @@ namespace Ypf_Manager
                     Console.WriteLine();
                 }
 
-                if (!skipDataChecksum)
+                // Skip data integrity validation if requested by the user
+                if (!skipDataIntegrityValidation)
                 {
                     // Order by offset to improve sequential read performance
                     header.ArchivedFiles = header.ArchivedFiles.OrderBy(x => x.Offset).ToList();
 
                     Console.WriteLine();
                     Console.WriteLine("[DATA]");
-                    Console.Write("Checking Data Checksum...");
+                    Console.Write("Validating data integrity...");
 
+                    // Validate each entry
                     foreach (YPFEntry entry in header.ArchivedFiles)
                     {
                         inputFileStream.Position = entry.Offset;
 
-                        header.ValidateDataChecksum(inputFileStream, entry.CompressedFileSize, entry.DataChecksum);
+                        header.ValidateDataIntegrity(inputFileStream, entry.CompressedFileSize, entry.DataChecksum);
                     }
 
                     Console.WriteLine(" Complete");

@@ -158,28 +158,28 @@ namespace Ypf_Manager
         }
 
 
-        // Check if data matches the providen checksum
-        public void ValidateDataChecksum(Stream inputStream, Int32 length, UInt32 checksum)
+        // Validate data integrity by checking if data checksum matches providen checksum
+        public void ValidateDataIntegrity(Stream inputStream, Int32 length, UInt32 checksum)
         {
             UInt32 calculatedDataChecksum = DataChecksum.ComputeHash(inputStream, length);
 
             if (checksum != calculatedDataChecksum)
             {
-                throw new Exception("Invalid Data Checksum");
+                throw new Exception("Invalid Data Checksum / Corrupted Data");
             }
 
             inputStream.Position = 0;
         }
 
 
-        // Check if name matches the providen checksum
-        public void ValidateNameChecksum(Byte[] inputArray, UInt32 checksum)
+        // Validate name integrity by checking if name checksum matches providen checksum
+        public void ValidateNameIntegrity(Byte[] inputArray, UInt32 checksum)
         {
             UInt32 calculatedNameChecksum = NameChecksum.ComputeHash(inputArray);
 
             if (calculatedNameChecksum != checksum)
             {
-                throw new Exception("Invalid Name Checksum");
+                throw new Exception("Invalid Name Checksum / Corrupted Name");
             }
         }
 
@@ -218,7 +218,7 @@ namespace Ypf_Manager
 
             entry.DataChecksum = inputBinaryReader.ReadUInt32();
 
-            ValidateNameChecksum(fileNameEncoded, entry.NameChecksum);
+            ValidateNameIntegrity(fileNameEncoded, entry.NameChecksum);
 
             if (!Enum.IsDefined(typeof(YPFEntry.FileType), entry.Type))
             {

@@ -49,7 +49,7 @@ namespace Ypf_Manager
 
                         foreach (String f in config.FilesToProcess)
                         {
-                            YPFArchive.PrintInfo(f, config.SkipDataCheckOnPrintInfo);
+                            YPFArchive.PrintInfo(f, config.SkipDataIntegrityValidationOnPrintInfo);
                         }
                         break;
 
@@ -71,7 +71,7 @@ namespace Ypf_Manager
                         Console.WriteLine("\t-p <files_list>\t\tSet print archive info mode");
                         Console.WriteLine("\t-v <version>\t\tSet the YU-RIS engine target version of the archive file");
                         Console.WriteLine("\t-w\t\t\tWait for user input before exit");
-                        Console.WriteLine("\t-sdc\t\t\tSkip data checksum (Print info only)");
+                        Console.WriteLine("\t-sdc\t\t\tSkip data integrity validation (Print info only)");
 
                         break;
                 }
