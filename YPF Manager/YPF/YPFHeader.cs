@@ -61,12 +61,14 @@ namespace Ypf_Manager
             ArchivedFiles = new List<YPFEntry>();
         }
 
+
         public YPFHeader(int version)
         {
             ArchivedFiles = new List<YPFEntry>();
 
             Version = version;
         }
+
 
         public YPFHeader(Stream inputStream)
         {
