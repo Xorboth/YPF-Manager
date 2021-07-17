@@ -63,7 +63,7 @@ namespace Ypf_Manager
 
             for (int i = 0; i < data.Length; i++)
             {
-                //Crc32Table is an array of 256 32-bit constants
+                // Crc32Table is an array of 256 32-bit constants
                 crc32 = (crc32 >> 8) ^ Crc32Table[(byte)((crc32 ^ data[i]) & 0xFF)];
             }
 

@@ -150,17 +150,9 @@ namespace Ypf_Manager
             {
                 throw new Exception("Can't find files to process");
             }
-            else if (Mode == OperationMode.CreateArchive)
+            else if (Mode == OperationMode.CreateArchive && FoldersToProcess.Count == 0)
             {
-                if (EngineVersion <= 0)
-                {
-                    throw new Exception("Invalid engine version");
-                }
-
-                if (FoldersToProcess.Count == 0)
-                {
-                    throw new Exception("Can't find folders to process");
-                }
+                throw new Exception("Can't find folders to process");
             }
         }
 

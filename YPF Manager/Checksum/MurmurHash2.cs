@@ -1,4 +1,5 @@
-﻿/*  Source: https://github.com/abrandoned/murmur2/blob/master/MurmurHash2.c
+﻿/*
+ *  Source: https://github.com/abrandoned/murmur2/blob/master/MurmurHash2.c
  *
  *  MurmurHash2, by Austin Appleby
  *  Note - This code makes a few assumptions about how your machine behaves -

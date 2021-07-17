@@ -268,19 +268,14 @@ namespace Ypf_Manager
 
                     Console.WriteLine($"[{i + 1}/{header.ArchivedFiles.Count}] Extracting {entry.FileName}");
 
-
-                    //
                     // Copy file to MemoryStream to improve performance
-                    //
-
                     MemoryStream entryMemoryStream = new MemoryStream(entry.CompressedFileSize);
-
                     inputFileStream.Position = entry.Offset;
                     Util.CopyStream(inputFileStream, entryMemoryStream, entry.CompressedFileSize);
 
                     // Validate file checksum
+                    header.ValidateDataIntegrity(entryMemoryStream, 0, entry.CompressedFileSize, entry.DataChecksum);
                     entryMemoryStream.Position = 0;
-                    header.ValidateDataIntegrity(entryMemoryStream, entry.CompressedFileSize, entry.DataChecksum);
 
                     // Decompress file if needed
                     if (entry.IsCompressed)
@@ -288,16 +283,13 @@ namespace Ypf_Manager
                         entryMemoryStream = Util.DecompressZlibStream(entryMemoryStream, entry.RawFileSize);
                     }
 
-
-                    //
-                    // Write the file
-                    //
-
                     String customExtension = (entry.Type == YPFEntry.FileType.ycg ? ".ycg" : "");
                     String outputFileName = $@"{outputFolder}\{entry.FileName}{customExtension}";
 
+                    // Create file directory tree
                     Directory.CreateDirectory(Path.GetDirectoryName(outputFileName));
 
+                    // Write the file
                     using (FileStream outputFileStream = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.None))
                     {
                         Util.CopyStream(entryMemoryStream, outputFileStream, entry.RawFileSize);
@@ -364,9 +356,7 @@ namespace Ypf_Manager
                     // Validate each entry
                     foreach (YPFEntry entry in header.ArchivedFiles)
                     {
-                        inputFileStream.Position = entry.Offset;
-
-                        header.ValidateDataIntegrity(inputFileStream, entry.CompressedFileSize, entry.DataChecksum);
+                        header.ValidateDataIntegrity(inputFileStream, entry.Offset, entry.CompressedFileSize, entry.DataChecksum);
                     }
 
                     Console.WriteLine(" Complete");

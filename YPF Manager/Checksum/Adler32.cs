@@ -1,4 +1,5 @@
-﻿/*  Source: https://github.com/madler/zlib/blob/master/adler32.c
+﻿/*
+ * Source: https://github.com/madler/zlib/blob/master/adler32.c
  *
  *  adler32.c -- compute the Adler-32 checksum of a data stream
  *
@@ -135,7 +136,7 @@ namespace Ypf_Manager
                 {
                     len -= 16;
 
-                    //DO16(buf);
+                    // DO16(buf);
                     for (int i = 0; i < 16; i++)
                     {
                         adler += data[dataIndex++]; sum2 += adler;

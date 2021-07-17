@@ -14,13 +14,13 @@ namespace Ypf_Manager
         //
 
         // YPF\0
-        public byte[] Signature => new byte[] { 0x59, 0x50, 0x46, 0x00 };
+        public byte[] Signature { get { return new byte[] { 0x59, 0x50, 0x46, 0x00 }; } }
 
         private Int32 _version;
 
         public Int32 Version
         {
-            get { return _version; }
+            get => _version;
             set
             {
                 if (value < 234 || value > 500)
@@ -39,17 +39,17 @@ namespace Ypf_Manager
         public Int32 ArchivedFilesHeaderSize { get; set; }
 
         //Shift-JIS
-        public Encoding Encoding => Encoding.GetEncoding(932);
+        public Encoding Encoding { get { return Encoding.GetEncoding(932); } }
 
         public List<YPFEntry> ArchivedFiles { get; set; }
 
-        public Checksum NameChecksum { get; set; }
+        public Checksum NameChecksum { get; private set; }
 
-        public Checksum DataChecksum { get; set; }
+        public Checksum DataChecksum { get; private set; }
 
         public Byte FileNameEncryptionKey { get; set; }
 
-        public Byte[] LengthSwappingTable;
+        public Byte[] LengthSwappingTable { get; private set; }
 
 
         //
@@ -140,7 +140,7 @@ namespace Ypf_Manager
         }
 
 
-        // Assume filename xor encryption key (since some versions may have multiple keys)
+        // Assume filename xor encryption key (may not work because some versions have multiple keys)
         public void AssumeFileNameEncryptionKey()
         {
             if (Version == 290)
@@ -159,16 +159,16 @@ namespace Ypf_Manager
 
 
         // Validate data integrity by checking if data checksum matches providen checksum
-        public void ValidateDataIntegrity(Stream inputStream, Int32 length, UInt32 checksum)
+        public void ValidateDataIntegrity(Stream inputStream, Int64 position, Int32 length, UInt32 checksum)
         {
+            inputStream.Position = position;
+
             UInt32 calculatedDataChecksum = DataChecksum.ComputeHash(inputStream, length);
 
             if (checksum != calculatedDataChecksum)
             {
                 throw new Exception("Invalid Data Checksum / Corrupted Data");
             }
-
-            inputStream.Position = 0;
         }
 
 
@@ -196,9 +196,9 @@ namespace Ypf_Manager
 
             Byte[] fileNameEncoded = inputBinaryReader.ReadBytes(fileNameLengthDecoded);
 
-            for (int j = 0; j < fileNameLengthDecoded; j++)
+            for (int i = 0; i < fileNameLengthDecoded; i++)
             {
-                fileNameEncoded[j] = (byte)(Util.OneComplement(fileNameEncoded[j]) ^ FileNameEncryptionKey);
+                fileNameEncoded[i] = (byte)(Util.OneComplement(fileNameEncoded[i]) ^ FileNameEncryptionKey);
             }
 
             entry.FileName = Encoding.GetString(fileNameEncoded);

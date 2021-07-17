@@ -78,12 +78,12 @@ namespace Ypf_Manager
             }
             catch (Exception ex)
             {
-                // Print error to console
-                Console.WriteLine(ex.Message);
-
                 // Save error to log
                 log.Add(ex.Message);
                 log.Save();
+
+                // Print error to console
+                Console.WriteLine(ex.Message);
             }
 
             // Wait for user input if -w argument is provided
